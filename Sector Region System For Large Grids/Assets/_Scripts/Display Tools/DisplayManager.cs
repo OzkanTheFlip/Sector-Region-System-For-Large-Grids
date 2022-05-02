@@ -26,6 +26,8 @@ public class DisplayManager : MonoBehaviour
 
     private List<List<DisplayTile>> displayTiles = new List<List<DisplayTile>>();
 
+    private float timer = 0f;
+
     private void Start()
     {
         grid = new Grid(gridWidth, gridHeight, sectorWidth, sectorHeight);
@@ -66,11 +68,11 @@ public class DisplayManager : MonoBehaviour
             }
 
             mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            int x1 = Mathf.FloorToInt(mousePosition.x);
-            int y1 = Mathf.FloorToInt(mousePosition.y);
+            int x1 = Mathf.RoundToInt(mousePosition.x);
+            int y1 = Mathf.RoundToInt(mousePosition.y);
+
             if (x1 >= 0 && x1 < gridWidth && y1 >= 0 && y1 < gridHeight)
             {
-                Debug.Log(x1 + "," + y1);
                 DisplayRegion(grid.GetTile(x1, y1));
             }
         }
@@ -93,28 +95,49 @@ public class DisplayManager : MonoBehaviour
                 grid.SetTileTraversable(grid.GetTile(x, y), false);
             }
         }
+        for (int y = 4; y < 9; y++)
+        {
+            grid.SetTileTraversable(grid.GetTile(14, y), false);
+        }
     }
 
     private void DisplayRegion(Tile tile)
     {
         if (grid.GetTileRegion(tile) == null)
             return;
+        timer += Time.deltaTime;
+
         foreach(Tile regionTile in grid.GetTileRegion(tile).GetTiles())
         {
             displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].overlapSpriteRenderer.color = new Color(255, 155, 0, .4f);
+        }
+
+        if (timer >= 2f)
+        {
+            foreach (Vector2 threshold in grid.GetTileRegion(tile).GetThresholds())
+            {
+                displayTiles[(int)threshold.x][(int)threshold.y].overlapSpriteRenderer.color = new Color(255, 0, 200, .4f);
+            }
+            if (timer >= 4f)
+                timer = 0;
         }
     }
 
     public void DisplaySectors()
     {
-        int index;
-        for (int x = 0; x < gridWidth; x++)
+        List<Sector> sectors = grid.GetSectors();
+        int num = 0;
+        foreach(Sector sector in sectors)
         {
-            for (int y = 0; y < gridHeight; y++)
+            int index = num / 6;
+            for (int x = (int)sector.lowerBounds.x; x <= sector.upperBounds.x; x++)
             {
-                index = grid.GetTileSector(grid.GetTile(x, y)).id / 6;
-                displayTiles[x][y].overlapSpriteRenderer.color = colors[grid.GetTileSector(grid.GetTile(x, y)).id - 6 * index];
+                for (int y = (int)sector.lowerBounds.y; y <= sector.upperBounds.y; y++)
+                {
+                    displayTiles[x][y].overlapSpriteRenderer.color = colors[num - 6 * index];
+                }
             }
+            num++;
         }
     }
 

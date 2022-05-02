@@ -8,8 +8,13 @@ public class Grid
     private List<Sector> sectors = new List<Sector>();
     private Dictionary<Sector, List<Region>> regions = new Dictionary<Sector, List<Region>>();
 
+    public readonly int gridWidth;
+    public readonly int gridHeight;
+
     public Grid(int gridWidth, int gridHeight, int sectorWidth, int sectorHeight)
     {
+        this.gridWidth = gridWidth;
+        this.gridHeight = gridHeight;
         for(int x = 0; x < gridWidth; x++)
         {
             tiles.Add(new List<Tile>());
@@ -19,54 +24,50 @@ public class Grid
             }
         }
 
-        int id = 0;
-        List<Tile> sectorTiles = new List<Tile>();
+        int num = 0;
         int yIndex = 0;
         int xIndex = 0;
         for (int i = 0; i < Mathf.CeilToInt((float)gridWidth / sectorWidth) * Mathf.CeilToInt((float)gridHeight / sectorHeight); i++)
         {
-            for (int x = xIndex; x < xIndex + sectorWidth; x++)
+            int xSubtrahend = 1;
+            int ySubtrahend = 1;
+            while(xIndex + sectorWidth - xSubtrahend >= gridWidth)
             {
-                for (int y = yIndex; y < yIndex + sectorHeight; y++)
-                {
-                    if (x < gridWidth && y < gridHeight)
-                        sectorTiles.Add(tiles[x][y]);
-                }
+                xSubtrahend++;
             }
+            while (yIndex + sectorHeight - ySubtrahend >= gridHeight)
+            {
+                ySubtrahend++;
+            }
+            sectors.Add(new Sector(new Vector2(xIndex, yIndex), new Vector2(xIndex+sectorWidth-xSubtrahend, yIndex+sectorHeight-ySubtrahend)));
             xIndex += sectorWidth;
-            sectors.Add(new Sector(sectorTiles, id));
-            sectorTiles = new List<Tile>();
-            id++;
-            if (id % Mathf.CeilToInt((float)gridWidth / sectorWidth) == 0)
+            num++;
+            if (num % Mathf.CeilToInt((float)gridWidth / sectorWidth) == 0)
             {
                 xIndex = 0;
                 yIndex += sectorHeight;
             }
         }
 
-        foreach(Sector sector in sectors)
+        foreach (Sector sector in sectors)
         {
-            List<Region> newRegions = GenerateRegions(sector);
-            foreach(Region newRegion in newRegions)
-            {
-                if (!regions.ContainsKey(sector))
-                {
-                    regions.Add(sector, new List<Region>());
-                }
-                regions[sector].Add(newRegion);
-            }
+            GenerateRegions(sector);
+        }
+        foreach (KeyValuePair<Sector, List<Region>> region in regions)
+        {
+            GenerateThresholds(region.Value);
         }
     }
 
-    private List<Region> GenerateRegions(Sector sector)
+    private void GenerateRegions(Sector sector)
     {
         regions.Remove(sector);
         //Initialize tiles for flood fill
         List<List<int>> regionNums = new List<List<int>>();
-        int xLowerBound = sector.GetBottomLeftTile().xCoordinate;
-        int yLowerBound = sector.GetBottomLeftTile().yCoordinate;
-        int xUpperBound = sector.GetTopRightTile().xCoordinate;
-        int yUpperBound = sector.GetTopRightTile().yCoordinate;
+        int xLowerBound = (int)sector.lowerBounds.x;
+        int yLowerBound = (int)sector.lowerBounds.y;
+        int xUpperBound = (int)sector.upperBounds.x;
+        int yUpperBound = (int)sector.upperBounds.y;
         for (int x = xLowerBound; x < xUpperBound + 1; x++)
         {
             regionNums.Add(new List<int>());
@@ -91,8 +92,8 @@ public class Grid
                         notFullyFlooded = true;
                         FloodFill(x, y, id, ref regionNums);
                         id++;
-                        x = sector.GetTopRightTile().xCoordinate;
-                        y = sector.GetTopRightTile().yCoordinate;
+                        x = xUpperBound;
+                        y = yUpperBound;
                     }
                 }
             }
@@ -118,7 +119,15 @@ public class Grid
         {
             newRegions.Add(new Region(tileList));
         }
-        return newRegions;
+        
+        foreach (Region newRegion in newRegions)
+        {
+            if (!regions.ContainsKey(sector))
+            {
+                regions.Add(sector, new List<Region>());
+            }
+            regions[sector].Add(newRegion);
+        }
     }
 
     private void FloodFill(int x, int y, int id, ref List<List<int>> regionNums)
@@ -137,19 +146,61 @@ public class Grid
         }
     }
 
+    private void GenerateThresholds(List<Region> regionsToGenerateThresholds)
+    {
+        foreach (Region region in regionsToGenerateThresholds)
+        {
+            List<Tile> regionTiles = region.GetTiles();
+            foreach (Tile regionTile in regionTiles)
+            {
+                List<Tile> neighbors = GetNeighbors(regionTile);
+                foreach (Tile neighbor in neighbors)
+                {
+                    if (region.Contains(neighbor))
+                        continue;
+                    if ((neighbor.xCoordinate < regionTile.xCoordinate && neighbor.yCoordinate == regionTile.yCoordinate)
+                        || (neighbor.yCoordinate < regionTile.yCoordinate && neighbor.xCoordinate == regionTile.xCoordinate))
+                    {
+                        region.AddThreshold(new Vector2(regionTile.xCoordinate, regionTile.yCoordinate));
+                    }
+                    else if ((neighbor.xCoordinate > regionTile.xCoordinate && neighbor.yCoordinate == regionTile.yCoordinate)
+                        || (neighbor.yCoordinate > regionTile.yCoordinate && neighbor.xCoordinate == regionTile.xCoordinate))
+                    {
+                        region.AddThreshold(new Vector2(neighbor.xCoordinate, neighbor.yCoordinate));
+                    }
+                }
+            }
+        }
+    }
+
+    public List<Tile> GetNeighbors(Tile tile)
+    {
+        List<Tile> neighbors = new List<Tile>();
+
+        for (int x = -1; x <= 1; x++)
+        {
+            for (int y = -1; y <= 1; y++)
+            {
+                //This is you not your neighbors
+                if (x == 0 && y == 0)
+                    continue;
+                //Check if inside grid
+                int checkX = tile.xCoordinate + x;
+                int checkY = tile.yCoordinate + y;
+                if (checkX >= 0 && checkX < gridWidth && checkY >= 0 && checkY < gridHeight)
+                {
+                    neighbors.Add(tiles[checkX][checkY]);
+                }
+            }
+        }
+        return neighbors;
+    }
+
     public void SetTileTraversable(Tile tile, bool traversable)
     {
         tile.traversable = traversable;
         Sector sector = GetTileSector(tile);
-        List<Region> newRegions = GenerateRegions(sector);
-        foreach (Region newRegion in newRegions)
-        {
-            if (!regions.ContainsKey(sector))
-            {
-                regions.Add(sector, new List<Region>());
-            }
-            regions[sector].Add(newRegion);
-        }
+        GenerateRegions(sector);
     }
 
     public Tile GetTile(int x, int y)
@@ -181,5 +232,10 @@ public class Grid
         }
 
         return null;
+    }
+
+    public List<Sector> GetSectors()
+    {
+        return sectors;
     }
 }

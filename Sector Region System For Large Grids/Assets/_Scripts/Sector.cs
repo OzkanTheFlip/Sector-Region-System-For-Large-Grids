@@ -4,28 +4,19 @@ using UnityEngine;
 
 public class Sector
 {
-    private List<Tile> tiles;
+    public readonly Vector2 lowerBounds;
+    public readonly Vector2 upperBounds;
 
-    public readonly int id;
 
-    public Sector(List<Tile> tiles, int id)
+    public Sector(Vector2 lowerBounds, Vector2 upperBounds)
     {
-        this.tiles = tiles;
-        this.id = id;
-    }
-
-    public Tile GetBottomLeftTile()
-    {
-        return tiles[0];
-    }
-
-    public Tile GetTopRightTile()
-    {
-        return tiles[tiles.Count - 1];
+        this.lowerBounds = lowerBounds;
+        this.upperBounds = upperBounds;
     }
 
     public bool Contains(Tile tile)
     {
-        return tiles.Contains(tile);
+        return tile.xCoordinate >= lowerBounds.x && tile.xCoordinate <= upperBounds.x
+            && tile.yCoordinate >= lowerBounds.y && tile.yCoordinate <= upperBounds.y;
     }
 }
