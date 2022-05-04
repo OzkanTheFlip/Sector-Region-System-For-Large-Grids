@@ -16,6 +16,9 @@ public class DisplayManager : MonoBehaviour
     [SerializeField]
     private GameObject displayTile;
 
+    [SerializeField]
+    private bool blinkRegionThresholds = false;
+
     private bool showRegions = false;
 
     private Vector3 mousePosition;
@@ -112,7 +115,7 @@ public class DisplayManager : MonoBehaviour
             displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].overlapSpriteRenderer.color = new Color(255, 155, 0, .4f);
         }
 
-        if (timer >= 2f)
+        if (timer >= 2f && blinkRegionThresholds)
         {
             foreach (Vector2 threshold in grid.GetTileRegion(tile).GetThresholds())
             {
@@ -121,6 +124,14 @@ public class DisplayManager : MonoBehaviour
             if (timer >= 4f)
                 timer = 0;
         }
+
+        //foreach(Region region in grid.GetRegionNeighbors(grid.GetTileRegion(tile)))
+        //{
+        //    foreach (Tile regionTile in region.GetTiles())
+        //    {
+        //        displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].overlapSpriteRenderer.color = new Color(0, 155, 255, .4f);
+        //    }
+        //}
     }
 
     public void DisplaySectors()

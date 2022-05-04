@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,11 +7,23 @@ public class Region
 {
     private List<Tile> tiles;
 
+    public readonly int minX;
+    public readonly int maxY;
+
     private List<Vector2> thresholds = new List<Vector2>();
 
     public Region(List<Tile> tiles)
     {
         this.tiles = tiles;
+        minX = tiles[0].xCoordinate;
+        maxY = tiles[0].yCoordinate;
+        foreach (Tile tile in tiles)
+        {
+            if (tile.xCoordinate < minX)
+                minX = tile.xCoordinate;
+            if (tile.yCoordinate > maxY)
+                maxY = tile.yCoordinate;
+        }
     }
 
     public void AddThreshold(Vector2 threshold)
@@ -32,5 +45,10 @@ public class Region
     public List<Vector2> GetThresholds()
     {
         return thresholds;
+    }
+
+    internal void ClearThresholds()
+    {
+        thresholds.Clear();
     }
 }

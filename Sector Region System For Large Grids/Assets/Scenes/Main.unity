@@ -879,5 +879,9 @@ PrefabInstance:
       propertyPath: sectorHeight
       value: 4
       objectReference: {fileID: 0}
+    - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
+      propertyPath: blinkRegionThresholds
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}

@@ -6,7 +6,8 @@ public class Grid
 {
     private List<List<Tile>> tiles = new List<List<Tile>>();
     private List<Sector> sectors = new List<Sector>();
-    private Dictionary<Sector, List<Region>> regions = new Dictionary<Sector, List<Region>>();
+    List<Region> regions = new List<Region>();
+    Dictionary<Vector2, List<Region>> thresholdRegionDictionary = new Dictionary<Vector2, List<Region>>();
 
     public readonly int gridWidth;
     public readonly int gridHeight;
@@ -21,6 +22,7 @@ public class Grid
             for(int y = 0; y < gridHeight; y++)
             {
                 tiles[x].Add(new Tile(true, x, y));
+                thresholdRegionDictionary.Add(new Vector2(x, y), new List<Region>());
             }
         }
 
@@ -53,15 +55,10 @@ public class Grid
         {
             GenerateRegions(sector);
         }
-        foreach (KeyValuePair<Sector, List<Region>> region in regions)
-        {
-            GenerateThresholds(region.Value);
-        }
     }
 
     private void GenerateRegions(Sector sector)
     {
-        regions.Remove(sector);
         //Initialize tiles for flood fill
         List<List<int>> regionNums = new List<List<int>>();
         int xLowerBound = (int)sector.lowerBounds.x;
@@ -119,14 +116,26 @@ public class Grid
         {
             newRegions.Add(new Region(tileList));
         }
-        
+
+        List<Region> removeRegions = new List<Region>();
+        foreach (Region region in regions)
+        {
+            if (GetRegionSector(region) == sector)
+                removeRegions.Add(region);
+        }
+        foreach(Region removeRegion in removeRegions)
+        {
+            regions.Remove(removeRegion);
+            foreach(KeyValuePair<Vector2, List<Region>> regionList in thresholdRegionDictionary)
+            {
+                regionList.Value.Remove(removeRegion);
+            }
+        }
+
         foreach (Region newRegion in newRegions)
         {
-            if (!regions.ContainsKey(sector))
-            {
-                regions.Add(sector, new List<Region>());
-            }
-            regions[sector].Add(newRegion);
+            GenerateThresholds(newRegion);
+            regions.Add(newRegion);
         }
     }
 
@@ -146,30 +155,36 @@ public class Grid
         }
     }
 
-    private void GenerateThresholds(List<Region> regionsToGenerateThresholds)
+    private void GenerateThresholds(Region region)
     {
-        foreach (Region region in regionsToGenerateThresholds)
+        region.ClearThresholds();
+        List<Tile> regionTiles = region.GetTiles();
+        foreach (Tile regionTile in regionTiles)
         {
-            List<Tile> regionTiles = region.GetTiles();
-            foreach (Tile regionTile in regionTiles)
+            List<Tile> neighbors = GetNeighbors(regionTile);
+            foreach (Tile neighbor in neighbors)
             {
-                List<Tile> neighbors = GetNeighbors(regionTile);
-                foreach (Tile neighbor in neighbors)
+                if (region.Contains(neighbor) || !neighbor.traversable)
+                    continue;
+                if ((neighbor.xCoordinate < regionTile.xCoordinate && neighbor.yCoordinate == regionTile.yCoordinate)
+                    || (neighbor.yCoordinate < regionTile.yCoordinate && neighbor.xCoordinate == regionTile.xCoordinate))
                 {
-                    if (region.Contains(neighbor))
-                        continue;
-                    if ((neighbor.xCoordinate < regionTile.xCoordinate && neighbor.yCoordinate == regionTile.yCoordinate)
-                        || (neighbor.yCoordinate < regionTile.yCoordinate && neighbor.xCoordinate == regionTile.xCoordinate))
-                    {
-                        region.AddThreshold(new Vector2(regionTile.xCoordinate, regionTile.yCoordinate));
-                    }
-                    else if ((neighbor.xCoordinate > regionTile.xCoordinate && neighbor.yCoordinate == regionTile.yCoordinate)
-                        || (neighbor.yCoordinate > regionTile.yCoordinate && neighbor.xCoordinate == regionTile.xCoordinate))
-                    {
-                        region.AddThreshold(new Vector2(neighbor.xCoordinate, neighbor.yCoordinate));
-                    }
+                    region.AddThreshold(new Vector2(regionTile.xCoordinate, regionTile.yCoordinate));
+                }
+                else if ((neighbor.xCoordinate > regionTile.xCoordinate && neighbor.yCoordinate == regionTile.yCoordinate)
+                    || (neighbor.xCoordinate == regionTile.xCoordinate && neighbor.yCoordinate > regionTile.yCoordinate)
+                    || (neighbor.xCoordinate > regionTile.xCoordinate && neighbor.yCoordinate > regionTile.yCoordinate)
+                    || (neighbor.xCoordinate < region.minX && neighbor.yCoordinate > region.maxY))
+                {
+                    region.AddThreshold(new Vector2(neighbor.xCoordinate, neighbor.yCoordinate));
                 }
             }
+        }
+
+        foreach(Vector2 threshold in region.GetThresholds())
+        {
+            if(!thresholdRegionDictionary[threshold].Contains(region))
+                thresholdRegionDictionary[threshold].Add(region);
         }
     }
 
@@ -201,6 +216,19 @@ public class Grid
         tile.traversable = traversable;
         Sector sector = GetTileSector(tile);
         GenerateRegions(sector);
+        if (!traversable)
+        {
+            foreach (KeyValuePair<Vector2, List<Region>> thresholdRegion in thresholdRegionDictionary)
+            {
+                if (thresholdRegion.Key == new Vector2(tile.xCoordinate, tile.yCoordinate))
+                {
+                    foreach (Region region in thresholdRegion.Value)
+                    {
+                        GenerateThresholds(region);
+                    }
+                }
+            }
+        }
     }
 
     public Tile GetTile(int x, int y)
@@ -220,15 +248,41 @@ public class Grid
         return null;
     }
 
+    public Sector GetRegionSector(Region region)
+    {
+        int checkX = region.GetTiles()[0].xCoordinate;
+        int checkY = region.GetTiles()[0].yCoordinate;
+        foreach(Sector sector in sectors)
+        {
+            if (checkX >= sector.lowerBounds.x && checkY >= sector.lowerBounds.y
+                && checkX <= sector.upperBounds.x && checkY <= sector.upperBounds.y)
+                return sector;
+        }
+
+        Debug.LogError("Region not in any sector, doesn't make sense");
+        return null;
+    }
+
+    public List<Region> GetRegionNeighbors(Region region)
+    {
+        List<Region> regionNeighbors = new List<Region>();
+        foreach(Vector2 threshold in region.GetThresholds())
+        {
+            foreach(Region regionToAdd in thresholdRegionDictionary[threshold])
+            {
+                if (!regionNeighbors.Contains(regionToAdd))
+                    regionNeighbors.Add(regionToAdd);
+            }
+        }
+        return regionNeighbors;
+    }
+
     public Region GetTileRegion(Tile tile)
     {
-        foreach (KeyValuePair<Sector, List<Region>> regionList in regions)
+        foreach(Region region in regions)
         {
-            foreach(Region region in regionList.Value)
-            {
-                if (region.Contains(tile))
-                    return region;
-            }
+            if (region.Contains(tile))
+                return region;
         }
 
         return null;
