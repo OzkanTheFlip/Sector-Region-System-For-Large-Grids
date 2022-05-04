@@ -18,6 +18,8 @@ public class DisplayManager : MonoBehaviour
 
     [SerializeField]
     private bool blinkRegionThresholds = false;
+    [SerializeField]
+    private bool showRegionNeigbors = false;
 
     private bool showRegions = false;
 
@@ -55,6 +57,9 @@ public class DisplayManager : MonoBehaviour
         colors.Add(new Color(Color.green.r, Color.green.g, Color.green.b, .4f));
         colors.Add(new Color(Color.magenta.r, Color.magenta.g, Color.magenta.b, .4f));
         colors.Add(new Color(Color.red.r, Color.red.g, Color.red.b, .4f));
+        colors.Add(new Color(100f / 255f, 0f, 100f / 255f, .4f));
+        colors.Add(new Color(255f / 255f, 100f / 255f, 0f, .4f));
+        colors.Add(new Color(100f / 255f, 50f / 255f, 0f, .4f));
         colors.Add(new Color(Color.yellow.r, Color.yellow.g, Color.yellow.b, .4f));
     }
 
@@ -112,26 +117,33 @@ public class DisplayManager : MonoBehaviour
 
         foreach(Tile regionTile in grid.GetTileRegion(tile).GetTiles())
         {
-            displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].overlapSpriteRenderer.color = new Color(255, 155, 0, .4f);
+            displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].overlapSpriteRenderer.color = new Color(1f, 1f, 0, .4f);
         }
 
         if (timer >= 2f && blinkRegionThresholds)
         {
             foreach (Vector2 threshold in grid.GetTileRegion(tile).GetThresholds())
             {
-                displayTiles[(int)threshold.x][(int)threshold.y].overlapSpriteRenderer.color = new Color(255, 0, 200, .4f);
+                displayTiles[(int)threshold.x][(int)threshold.y].overlapSpriteRenderer.color = new Color(1f, 0, 1f, .4f);
             }
             if (timer >= 4f)
                 timer = 0;
         }
 
-        //foreach(Region region in grid.GetRegionNeighbors(grid.GetTileRegion(tile)))
-        //{
-        //    foreach (Tile regionTile in region.GetTiles())
-        //    {
-        //        displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].overlapSpriteRenderer.color = new Color(0, 155, 255, .4f);
-        //    }
-        //}
+        if (showRegionNeigbors)
+        {
+            int num = 0;
+            foreach (Region region in grid.GetRegionNeighbors(grid.GetTileRegion(tile)))
+            {
+                foreach (Tile regionTile in region.GetTiles())
+                {
+                    displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].overlapSpriteRenderer.color = colors[num];
+                }
+                num++;
+                if (num >= colors.Count - 1)
+                    num = 0;
+            }
+        }
     }
 
     public void DisplaySectors()
@@ -140,12 +152,12 @@ public class DisplayManager : MonoBehaviour
         int num = 0;
         foreach(Sector sector in sectors)
         {
-            int index = num / 6;
+            int index = num / colors.Count;
             for (int x = (int)sector.lowerBounds.x; x <= sector.upperBounds.x; x++)
             {
                 for (int y = (int)sector.lowerBounds.y; y <= sector.upperBounds.y; y++)
                 {
-                    displayTiles[x][y].overlapSpriteRenderer.color = colors[num - 6 * index];
+                    displayTiles[x][y].overlapSpriteRenderer.color = colors[num - colors.Count * index];
                 }
             }
             num++;

@@ -270,7 +270,7 @@ public class Grid
         {
             foreach(Region regionToAdd in thresholdRegionDictionary[threshold])
             {
-                if (!regionNeighbors.Contains(regionToAdd))
+                if (!regionNeighbors.Contains(regionToAdd) && regionToAdd != region)
                     regionNeighbors.Add(regionToAdd);
             }
         }
