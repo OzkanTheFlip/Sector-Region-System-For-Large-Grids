@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class DisplayManager : MonoBehaviour
+public class DemoManager : MonoBehaviour
 {
     [SerializeField]
     private int gridWidth;
@@ -16,10 +16,11 @@ public class DisplayManager : MonoBehaviour
     [SerializeField]
     private GameObject displayTile;
 
-    [SerializeField]
+
     private bool blinkRegionThresholds = false;
-    [SerializeField]
     private bool showRegionNeigbors = false;
+
+    private bool showSectors = false;
 
     private bool showRegions = false;
 
@@ -69,7 +70,7 @@ public class DisplayManager : MonoBehaviour
         int x1 = Mathf.RoundToInt(mousePosition.x);
         int y1 = Mathf.RoundToInt(mousePosition.y);
 
-        if (showRegions)
+        if (!showSectors)
         {
             for (int x = 0; x < gridWidth; x++)
             {
@@ -78,7 +79,10 @@ public class DisplayManager : MonoBehaviour
                     displayTiles[x][y].ResetDisplay();
                 }
             }
+        }
 
+        if (showRegions)
+        {
             if (x1 >= 0 && x1 < gridWidth && y1 >= 0 && y1 < gridHeight)
             {
                 DisplayRegion(grid.GetTile(x1, y1));
@@ -87,12 +91,12 @@ public class DisplayManager : MonoBehaviour
 
         if (x1 >= 0 && x1 < gridWidth && y1 >= 0 && y1 < gridHeight)
         {
-            if(Input.GetMouseButtonUp(0))
+            if(Input.GetMouseButton(0))
             {
                 grid.SetTileTraversable(grid.GetTile(x1, y1), true);
                 displayTiles[x1][y1].ResetDisplay();
             }
-            else if (Input.GetMouseButtonUp(1))
+            else if (Input.GetMouseButton(1))
             {
                 grid.SetTileTraversable(grid.GetTile(x1, y1), false);
                 displayTiles[x1][y1].ResetDisplay();
@@ -116,10 +120,6 @@ public class DisplayManager : MonoBehaviour
             {
                 grid.SetTileTraversable(grid.GetTile(x, y), false);
             }
-        }
-        for (int y = 4; y < 9; y++)
-        {
-            grid.SetTileTraversable(grid.GetTile(14, y), false);
         }
     }
 
@@ -162,6 +162,7 @@ public class DisplayManager : MonoBehaviour
 
     public void DisplaySectors()
     {
+        showSectors = !showSectors;
         List<Sector> sectors = grid.GetSectors();
         int num = 0;
         foreach(Sector sector in sectors)
@@ -181,5 +182,15 @@ public class DisplayManager : MonoBehaviour
     public void ShowRegions()
     {
         showRegions = !showRegions;
+    }
+
+    public void ToggleShowNeighbors()
+    {
+        showRegionNeigbors = !showRegionNeigbors;
+    }
+
+    public void ToggleShowThresholds()
+    {
+        blinkRegionThresholds = !blinkRegionThresholds;
     }
 }
