@@ -65,6 +65,10 @@ public class DisplayManager : MonoBehaviour
 
     private void Update()
     {
+        mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        int x1 = Mathf.RoundToInt(mousePosition.x);
+        int y1 = Mathf.RoundToInt(mousePosition.y);
+
         if (showRegions)
         {
             for (int x = 0; x < gridWidth; x++)
@@ -75,13 +79,23 @@ public class DisplayManager : MonoBehaviour
                 }
             }
 
-            mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            int x1 = Mathf.RoundToInt(mousePosition.x);
-            int y1 = Mathf.RoundToInt(mousePosition.y);
-
             if (x1 >= 0 && x1 < gridWidth && y1 >= 0 && y1 < gridHeight)
             {
                 DisplayRegion(grid.GetTile(x1, y1));
+            }
+        }
+
+        if (x1 >= 0 && x1 < gridWidth && y1 >= 0 && y1 < gridHeight)
+        {
+            if(Input.GetMouseButtonUp(0))
+            {
+                grid.SetTileTraversable(grid.GetTile(x1, y1), true);
+                displayTiles[x1][y1].ResetDisplay();
+            }
+            else if (Input.GetMouseButtonUp(1))
+            {
+                grid.SetTileTraversable(grid.GetTile(x1, y1), false);
+                displayTiles[x1][y1].ResetDisplay();
             }
         }
     }

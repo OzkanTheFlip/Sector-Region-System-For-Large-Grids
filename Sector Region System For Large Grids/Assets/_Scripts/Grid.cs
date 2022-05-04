@@ -151,6 +151,11 @@ public class Grid
                 FloodFill(x - 1, y, id, ref regionNums);
                 FloodFill(x, y + 1, id, ref regionNums);
                 FloodFill(x, y - 1, id, ref regionNums);
+
+                FloodFill(x + 1, y + 1, id, ref regionNums);
+                FloodFill(x + 1, y - 1, id, ref regionNums);
+                FloodFill(x - 1, y + 1, id, ref regionNums);
+                FloodFill(x - 1, y - 1, id, ref regionNums);
             }
         }
     }
@@ -166,15 +171,14 @@ public class Grid
             {
                 if (region.Contains(neighbor) || !neighbor.traversable)
                     continue;
-                if ((neighbor.xCoordinate < regionTile.xCoordinate && neighbor.yCoordinate == regionTile.yCoordinate)
-                    || (neighbor.yCoordinate < regionTile.yCoordinate && neighbor.xCoordinate == regionTile.xCoordinate))
+                if (regionTile.xCoordinate == region.minX
+                    || regionTile.yCoordinate == region.minY)
                 {
                     region.AddThreshold(new Vector2(regionTile.xCoordinate, regionTile.yCoordinate));
                 }
-                else if ((neighbor.xCoordinate > regionTile.xCoordinate && neighbor.yCoordinate == regionTile.yCoordinate)
-                    || (neighbor.xCoordinate == regionTile.xCoordinate && neighbor.yCoordinate > regionTile.yCoordinate)
-                    || (neighbor.xCoordinate > regionTile.xCoordinate && neighbor.yCoordinate > regionTile.yCoordinate)
-                    || (neighbor.xCoordinate < region.minX && neighbor.yCoordinate > region.maxY))
+
+                if (neighbor.xCoordinate > region.maxX
+                    || neighbor.yCoordinate > region.maxY)
                 {
                     region.AddThreshold(new Vector2(neighbor.xCoordinate, neighbor.yCoordinate));
                 }
@@ -213,6 +217,8 @@ public class Grid
 
     public void SetTileTraversable(Tile tile, bool traversable)
     {
+        if (tile.traversable == traversable) return;
+
         tile.traversable = traversable;
         Sector sector = GetTileSector(tile);
         GenerateRegions(sector);
@@ -227,6 +233,19 @@ public class Grid
                         GenerateThresholds(region);
                     }
                 }
+            }
+        }
+        else
+        {
+            List<Region> regionsToGenerateThresholds = new List<Region>();
+            foreach(Tile neighbor in GetNeighbors(tile))
+            {
+                if (GetTileRegion(neighbor) != null && !regionsToGenerateThresholds.Contains(GetTileRegion(neighbor)))
+                    regionsToGenerateThresholds.Add(GetTileRegion(neighbor));
+            }
+            foreach(Region region in regionsToGenerateThresholds)
+            {
+                GenerateThresholds(region);
             }
         }
     }

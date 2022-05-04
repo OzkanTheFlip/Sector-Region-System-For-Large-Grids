@@ -8,6 +8,8 @@ public class Region
     private List<Tile> tiles;
 
     public readonly int minX;
+    public readonly int maxX; 
+    public readonly int minY;
     public readonly int maxY;
 
     private List<Vector2> thresholds = new List<Vector2>();
@@ -16,11 +18,17 @@ public class Region
     {
         this.tiles = tiles;
         minX = tiles[0].xCoordinate;
+        maxX = tiles[0].xCoordinate;
+        minY = tiles[0].yCoordinate;
         maxY = tiles[0].yCoordinate;
         foreach (Tile tile in tiles)
         {
             if (tile.xCoordinate < minX)
                 minX = tile.xCoordinate;
+            if (tile.xCoordinate > maxX)
+                maxX = tile.xCoordinate;
+            if (tile.yCoordinate < minY)
+                minY = tile.yCoordinate;
             if (tile.yCoordinate > maxY)
                 maxY = tile.yCoordinate;
         }
