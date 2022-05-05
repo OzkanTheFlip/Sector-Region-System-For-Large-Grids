@@ -16,7 +16,7 @@ public class Grid
     //The grid is broken down into Sectors
     private List<Sector> sectors = new List<Sector>();
     //Each Sector is broken down into Regions
-    List<Region> regions = new List<Region>();
+    private List<Region> regions = new List<Region>();
 
     //Each (x,y) coordinate is a Threshold for a particular number of Regions
     //If 2 Regions share any 1 Threshold, they are Neighbors
@@ -87,6 +87,9 @@ public class Grid
         {
             GenerateRegions(sector);
         }
+
+        //Set the rooms
+        SetRooms();
     }
 
     /// <summary>
@@ -258,6 +261,51 @@ public class Grid
     }
 
     /// <summary>
+    /// Floodfills the map by Regions. Each enclosed space has its own room number assigned to each region
+    /// </summary>
+    private void SetRooms()
+    {
+        //Reset all the regions to -1, indicating they're not assigned to rooms
+        foreach (Region region in regions)
+        {
+            region.room = -1;
+        }
+        //Keep track of the number of rooms flood filled
+        int roomNum = 0;
+        bool notFullyFlooded = true;
+        while (notFullyFlooded)
+        {
+            notFullyFlooded = false;
+            foreach (Region region in regions)
+            {
+                //If any region doesn't have a room, flood fill from there
+                if (region.room == -1)
+                {
+                    notFullyFlooded = true;
+                    FloodFillRegions(region, roomNum);
+                    roomNum++;
+                    break;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Flood Fill Algorithm
+    /// </summary>
+    private void FloodFillRegions(Region region, int id)
+    {
+        if (region.room == -1)
+        {
+            region.room = id;
+            foreach (Region neighbor in GetRegionNeighbors(region))
+            {
+                FloodFillRegions(neighbor, id);
+            }
+        }
+    }
+
+    /// <summary>
     /// Grabs the Sector that contains a certain Tile
     /// </summary>
     private Sector GetTileSector(Tile tile)
@@ -292,7 +340,9 @@ public class Grid
     /// </summary>
     public Tile GetTile(int x, int y)
     {
-        return tiles[x][y];
+        if(x >= 0 && x < gridWidth && y >= 0 && y < gridHeight)
+            return tiles[x][y];
+        return null;
     }
 
     /// <summary>
@@ -362,6 +412,15 @@ public class Grid
     }
 
     /// <summary>
+    /// Grabs the list of Regions
+    /// Note: Only reason I have this function currently is to provide a visual aid of the regions in the demo scene
+    /// </summary>
+    public List<Region> GetRegions()
+    {
+        return regions;
+    }
+
+    /// <summary>
     /// Sets a Tile's traversability (build or remove a wall)
     /// </summary>
     public void SetTileTraversable(Tile tile, bool traversable)
@@ -407,5 +466,7 @@ public class Grid
                 GenerateThresholds(region);
             }
         }
+
+        SetRooms();
     }
 }

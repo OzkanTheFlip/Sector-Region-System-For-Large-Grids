@@ -24,6 +24,8 @@ public class DemoManager : MonoBehaviour
 
     private bool showRegions = false;
 
+    private bool showRooms = false;
+
     private Vector3 mousePosition;
 
     private List<Color> colors = new List<Color>();
@@ -86,6 +88,17 @@ public class DemoManager : MonoBehaviour
             if (x1 >= 0 && x1 < gridWidth && y1 >= 0 && y1 < gridHeight)
             {
                 DisplayRegion(grid.GetTile(x1, y1));
+            }
+        }
+
+        if(showRooms)
+        {
+            foreach(Region region in grid.GetRegions())
+            {
+                foreach(Tile tile in region.GetTiles())
+                {
+                    displayTiles[tile.xCoordinate][tile.yCoordinate].overlapSpriteRenderer.color = colors[region.room - (int)(colors.Count * Mathf.Floor(region.room / colors.Count))];
+                }
             }
         }
 
@@ -192,5 +205,10 @@ public class DemoManager : MonoBehaviour
     public void ToggleShowThresholds()
     {
         blinkRegionThresholds = !blinkRegionThresholds;
+    }
+
+    public void ToggleShowRooms()
+    {
+        showRooms = !showRooms;
     }
 }

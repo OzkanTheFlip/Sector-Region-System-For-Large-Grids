@@ -20,6 +20,10 @@ public class Region
     //The largest yCoordinate found in the tiles
     public readonly int maxY;
 
+    //What enclosed space is this tile a part of
+    //Before you pathfind from one tile to another, just check if they're in the same room, if they're not then don't bother
+    public int room = -1;
+
     //List of this region's thresholds
     //A Threshold is an (x,y) coordinate that is marked as an entrance for this region
     private List<Vector2> thresholds = new List<Vector2>();

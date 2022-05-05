@@ -4,6 +4,7 @@ using UnityEngine;
 
 /// <summary>
 /// Data structure containing an (x,y) coordinate and a traversability boolean
+/// Also contains data used for pathfinding
 /// </summary>
 public class Tile
 {
