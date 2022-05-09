@@ -78,7 +78,8 @@ public class DemoManager : MonoBehaviour
 
         if (showRegions)
         {
-            if (grid.GetTileRegion(grid.GetTile(x1, y1)) != null && mouseRegion != grid.GetTileRegion(grid.GetTile(x1, y1)))
+            if ((grid.GetTileRegion(grid.GetTile(x1, y1)) != null && mouseRegion != grid.GetTileRegion(grid.GetTile(x1, y1)))
+                || (timer >= 2f && blinkRegionThresholds))
             {
                 foreach (Tile tile in mouseRegion.GetTiles())
                 {
@@ -101,6 +102,17 @@ public class DemoManager : MonoBehaviour
                     DisplayRegion(mouseRegion);
                 }
             }
+            else if (timer < 2f && blinkRegionThresholds)
+            {
+                foreach (Vector2Int threshold in mouseRegion.GetThresholds())
+                {
+                    SpriteRenderer[] spriteRenderers = displayTiles[threshold.x][threshold.y].GetComponentsInChildren<SpriteRenderer>();
+                    spriteRenderers[1].color = new Color(1f, 0, 1f, .4f);
+                }
+            }
+            timer += Time.deltaTime;
+            if (timer >= 4f)
+                timer = 0;
         }
 
         if (x1 >= 0 && x1 < gridWidth && y1 >= 0 && y1 < gridHeight)
@@ -156,23 +168,10 @@ public class DemoManager : MonoBehaviour
 
     private void DisplayRegion(Region region)
     {
-        timer += Time.deltaTime;
-
         foreach(Tile regionTile in region.GetTiles())
         {
             SpriteRenderer[] spriteRenderers = displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
             spriteRenderers[1].color = new Color(1f, 1f, 0, .4f);
-        }
-
-        if (timer >= 2f && blinkRegionThresholds)
-        {
-            foreach (Vector2Int threshold in region.GetThresholds())
-            {
-                SpriteRenderer[] spriteRenderers = displayTiles[threshold.x][threshold.y].GetComponentsInChildren<SpriteRenderer>();
-                spriteRenderers[1].color = new Color(1f, 0, 1f, .4f);
-            }
-            if (timer >= 4f)
-                timer = 0;
         }
 
         if (showRegionNeigbors)
