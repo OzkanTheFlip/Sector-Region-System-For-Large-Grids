@@ -27,7 +27,7 @@ public class Region
 
     //List of this region's thresholds
     //A Threshold is an (x,y) coordinate that is marked as an entrance for this region
-    private List<Vector2> thresholds = new List<Vector2>();
+    private List<Vector2Int> thresholds = new List<Vector2Int>();
 
     /// <summary>
     /// Constructor
@@ -72,7 +72,7 @@ public class Region
     /// <summary>
     /// Grabs a list of this Region's thresholds
     /// </summary>
-    public List<Vector2> GetThresholds()
+    public List<Vector2Int> GetThresholds()
     {
         return thresholds;
     }
@@ -80,7 +80,7 @@ public class Region
     /// <summary>
     /// Adds a threshold to this Region
     /// </summary>
-    public void AddThreshold(Vector2 threshold)
+    public void AddThreshold(Vector2Int threshold)
     {
         if (!thresholds.Contains(threshold))
             thresholds.Add(threshold);

@@ -2098,11 +2098,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: gridWidth
-      value: 100
+      value: 250
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: gridHeight
-      value: 100
+      value: 250
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: sectorWidth

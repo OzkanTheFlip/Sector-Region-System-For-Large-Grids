@@ -32,9 +32,11 @@ public class DemoManager : MonoBehaviour
 
     private Grid grid;
 
-    private List<List<DisplayTile>> displayTiles = new List<List<DisplayTile>>();
+    private List<List<GameObject>> displayTiles = new List<List<GameObject>>();
 
     private float timer = 0f;
+
+    private Region mouseRegion;
 
     private void Start()
     {
@@ -44,16 +46,18 @@ public class DemoManager : MonoBehaviour
 
         for (int x = 0; x < gridWidth; x++)
         {
-            displayTiles.Add(new List<DisplayTile>());
+            displayTiles.Add(new List<GameObject>());
             for (int y = 0; y < gridHeight; y++)
             {
                 GameObject newDisplayTile = Instantiate(displayTile);
                 newDisplayTile.transform.position = new Vector3(x, y, 0);
-                newDisplayTile.GetComponent<DisplayTile>().Tile = grid.GetTile(x, y);
-                newDisplayTile.GetComponent<DisplayTile>().textMesh.text = "(" + x + "," + y + ")";
-                displayTiles[x].Add(newDisplayTile.GetComponent<DisplayTile>());
+                displayTiles[x].Add(newDisplayTile);
             }
         }
+
+        mouseRegion = grid.GetTileRegion(grid.GetTile(0, 0));
+
+        DisplayGrid();
 
         colors.Add(new Color(Color.blue.r, Color.blue.g, Color.blue.b, .4f));
         colors.Add(new Color(Color.cyan.r, Color.cyan.g, Color.cyan.b, .4f));
@@ -72,47 +76,35 @@ public class DemoManager : MonoBehaviour
         int x1 = Mathf.RoundToInt(mousePosition.x);
         int y1 = Mathf.RoundToInt(mousePosition.y);
 
-        if (!showSectors)
-        {
-            for (int x = 0; x < gridWidth; x++)
-            {
-                for (int y = 0; y < gridHeight; y++)
-                {
-                    displayTiles[x][y].ResetDisplay();
-                }
-            }
-        }
-
         if (showRegions)
         {
-            if (x1 >= 0 && x1 < gridWidth && y1 >= 0 && y1 < gridHeight)
+            if (mouseRegion != grid.GetTileRegion(grid.GetTile(x1, y1)))
             {
-                DisplayRegion(grid.GetTile(x1, y1));
-            }
-        }
+                mouseRegion = grid.GetTileRegion(grid.GetTile(x1, y1));
+                DisplayGrid();
 
-        if(showRooms)
-        {
-            foreach(Region region in grid.GetRegions())
-            {
-                foreach(Tile tile in region.GetTiles())
+                if (x1 >= 0 && x1 < gridWidth && y1 >= 0 && y1 < gridHeight)
                 {
-                    displayTiles[tile.xCoordinate][tile.yCoordinate].overlapSpriteRenderer.color = colors[region.room - (int)(colors.Count * Mathf.Floor(region.room / colors.Count))];
+                    DisplayRegion(grid.GetTile(x1, y1));
                 }
             }
         }
 
         if (x1 >= 0 && x1 < gridWidth && y1 >= 0 && y1 < gridHeight)
         {
-            if(Input.GetMouseButton(0))
+            if (Input.GetMouseButton(0) && !grid.GetTile(x1,y1).traversable)
             {
                 grid.SetTileTraversable(grid.GetTile(x1, y1), true);
-                displayTiles[x1][y1].ResetDisplay();
+                SpriteRenderer[] spriteRenderers = displayTiles[x1][y1].GetComponentsInChildren<SpriteRenderer>();
+                spriteRenderers[0].color = grid.GetTile(x1, y1).traversable ? Color.white : Color.grey;
+                spriteRenderers[1].color = Color.clear;
             }
-            else if (Input.GetMouseButton(1))
+            else if (Input.GetMouseButton(1) && grid.GetTile(x1, y1).traversable)
             {
                 grid.SetTileTraversable(grid.GetTile(x1, y1), false);
-                displayTiles[x1][y1].ResetDisplay();
+                SpriteRenderer[] spriteRenderers = displayTiles[x1][y1].GetComponentsInChildren<SpriteRenderer>();
+                spriteRenderers[0].color = grid.GetTile(x1, y1).traversable ? Color.white : Color.grey;
+                spriteRenderers[1].color = Color.clear;
             }
         }
     }
@@ -136,6 +128,19 @@ public class DemoManager : MonoBehaviour
         }
     }
 
+    private void DisplayGrid()
+    {
+        for (int x = 0; x < gridWidth; x++)
+        {
+            for (int y = 0; y < gridHeight; y++)
+            {
+                SpriteRenderer[] spriteRenderers = displayTiles[x][y].GetComponentsInChildren<SpriteRenderer>();
+                spriteRenderers[0].color = grid.GetTile(x, y).traversable ? Color.white : Color.grey;
+                spriteRenderers[1].color = Color.clear;
+            }
+        }
+    }
+
     private void DisplayRegion(Tile tile)
     {
         if (grid.GetTileRegion(tile) == null)
@@ -144,14 +149,16 @@ public class DemoManager : MonoBehaviour
 
         foreach(Tile regionTile in grid.GetTileRegion(tile).GetTiles())
         {
-            displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].overlapSpriteRenderer.color = new Color(1f, 1f, 0, .4f);
+            SpriteRenderer[] spriteRenderers = displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
+            spriteRenderers[1].color = new Color(1f, 1f, 0, .4f);
         }
 
         if (timer >= 2f && blinkRegionThresholds)
         {
-            foreach (Vector2 threshold in grid.GetTileRegion(tile).GetThresholds())
+            foreach (Vector2Int threshold in grid.GetTileRegion(tile).GetThresholds())
             {
-                displayTiles[(int)threshold.x][(int)threshold.y].overlapSpriteRenderer.color = new Color(1f, 0, 1f, .4f);
+                SpriteRenderer[] spriteRenderers = displayTiles[threshold.x][threshold.y].GetComponentsInChildren<SpriteRenderer>();
+                spriteRenderers[1].color = new Color(1f, 0, 1f, .4f);
             }
             if (timer >= 4f)
                 timer = 0;
@@ -164,7 +171,8 @@ public class DemoManager : MonoBehaviour
             {
                 foreach (Tile regionTile in region.GetTiles())
                 {
-                    displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].overlapSpriteRenderer.color = colors[num];
+                    SpriteRenderer[] spriteRenderers = displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
+                    spriteRenderers[1].color = colors[num];
                 }
                 num++;
                 if (num >= colors.Count - 1)
@@ -176,25 +184,37 @@ public class DemoManager : MonoBehaviour
     public void DisplaySectors()
     {
         showSectors = !showSectors;
-        List<Sector> sectors = grid.GetSectors();
-        int num = 0;
-        foreach(Sector sector in sectors)
+        if (showSectors)
         {
-            int index = num / colors.Count;
-            for (int x = (int)sector.lowerBounds.x; x <= sector.upperBounds.x; x++)
+            HashSet<Sector> sectors = grid.GetSectors();
+            int num = 0;
+            foreach (Sector sector in sectors)
             {
-                for (int y = (int)sector.lowerBounds.y; y <= sector.upperBounds.y; y++)
+                int index = num / colors.Count;
+                for (int x = sector.lowerBounds.x; x <= sector.upperBounds.x; x++)
                 {
-                    displayTiles[x][y].overlapSpriteRenderer.color = colors[num - colors.Count * index];
+                    for (int y = sector.lowerBounds.y; y <= sector.upperBounds.y; y++)
+                    {
+                        SpriteRenderer[] spriteRenderers = displayTiles[x][y].GetComponentsInChildren<SpriteRenderer>();
+                        spriteRenderers[1].color = colors[num - colors.Count * index];
+                    }
                 }
+                num++;
             }
-            num++;
+        }
+        else
+        {
+            DisplayGrid();
         }
     }
 
     public void ShowRegions()
     {
         showRegions = !showRegions;
+        if(!showRegions)
+        {
+            DisplayGrid();
+        }
     }
 
     public void ToggleShowNeighbors()
@@ -210,5 +230,20 @@ public class DemoManager : MonoBehaviour
     public void ToggleShowRooms()
     {
         showRooms = !showRooms;
+        if(showRooms)
+        {
+            foreach (Region region in grid.GetRegions())
+            {
+                foreach (Tile tile in region.GetTiles())
+                {
+                    SpriteRenderer[] spriteRenderers = displayTiles[tile.xCoordinate][tile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
+                    spriteRenderers[1].color = colors[region.room - (int)(colors.Count * Mathf.Floor(region.room / colors.Count))];
+                }
+            }
+        }
+        else
+        {
+            DisplayGrid();
+        }
     }
 }

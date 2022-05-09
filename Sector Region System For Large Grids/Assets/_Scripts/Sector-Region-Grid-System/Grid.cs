@@ -14,13 +14,13 @@ public class Grid
     //The grid of Tiles
     private List<List<Tile>> tiles = new List<List<Tile>>();
     //The grid is broken down into Sectors
-    private List<Sector> sectors = new List<Sector>();
+    private HashSet<Sector> sectors = new HashSet<Sector>();
     //Each Sector is broken down into Regions
-    private List<Region> regions = new List<Region>();
+    private HashSet<Region> regions = new HashSet<Region>();
 
     //Each (x,y) coordinate is a Threshold for a particular number of Regions
     //If 2 Regions share any 1 Threshold, they are Neighbors
-    Dictionary<Vector2, List<Region>> thresholdRegionDictionary = new Dictionary<Vector2, List<Region>>();
+    Dictionary<Vector2Int, List<Region>> thresholdRegionDictionary = new Dictionary<Vector2Int, List<Region>>();
 
     //The width and height of the grid
     public readonly int gridWidth;
@@ -42,7 +42,7 @@ public class Grid
             for(int y = 0; y < gridHeight; y++)
             {
                 tiles[x].Add(new Tile(true, x, y));
-                thresholdRegionDictionary.Add(new Vector2(x, y), new List<Region>());
+                thresholdRegionDictionary.Add(new Vector2Int(x, y), new List<Region>());
             }
         }
 
@@ -70,7 +70,7 @@ public class Grid
             //Create a new Sector with the lower bound of (x,y) and an upper bound of (x+sectorWidth-1, y+sectorWidth-1)
             //Note: If you can't fit a full SECTOR_WIDTHxSECTOR_HEIGHT sector, that sector will be smaller
             //And the upperbound needs to subtract more than 1 from the x and/or y coordinate, hence the subtrahends
-            sectors.Add(new Sector(new Vector2(xIndex, yIndex), new Vector2(xIndex+sectorWidth-xSubtrahend, yIndex+sectorHeight-ySubtrahend)));
+            sectors.Add(new Sector(new Vector2Int(xIndex, yIndex), new Vector2Int(xIndex+sectorWidth-xSubtrahend, yIndex+sectorHeight-ySubtrahend)));
             //Shift over the xIndex for the next Sector
             xIndex += sectorWidth;
             //If you've filled up this row of sectors, reset the xIndex and shift up the yIndex
@@ -100,10 +100,10 @@ public class Grid
         //Create a 2D List of ints to flood fill
         List<List<int>> regionNums = new List<List<int>>();
         //Width and Height of the 2D List determined by the Sector's upper/lower bounds
-        int xLowerBound = (int)sector.lowerBounds.x;
-        int yLowerBound = (int)sector.lowerBounds.y;
-        int xUpperBound = (int)sector.upperBounds.x;
-        int yUpperBound = (int)sector.upperBounds.y;
+        int xLowerBound = sector.lowerBounds.x;
+        int yLowerBound = sector.lowerBounds.y;
+        int xUpperBound = sector.upperBounds.x;
+        int yUpperBound = sector.upperBounds.y;
         for (int x = xLowerBound; x < xUpperBound + 1; x++)
         {
             regionNums.Add(new List<int>());
@@ -175,7 +175,7 @@ public class Grid
         foreach(Region removeRegion in removeRegions)
         {
             regions.Remove(removeRegion);
-            foreach(KeyValuePair<Vector2, List<Region>> regionList in thresholdRegionDictionary)
+            foreach(KeyValuePair<Vector2Int, List<Region>> regionList in thresholdRegionDictionary)
             {
                 regionList.Value.Remove(removeRegion);
             }
@@ -230,7 +230,7 @@ public class Grid
             if (regionTile.xCoordinate == region.minX
                 || regionTile.yCoordinate == region.minY)
             {
-                region.AddThreshold(new Vector2(regionTile.xCoordinate, regionTile.yCoordinate));
+                region.AddThreshold(new Vector2Int(regionTile.xCoordinate, regionTile.yCoordinate));
             }
 
             //Loop through each region's neighbors
@@ -247,13 +247,13 @@ public class Grid
                 if (neighbor.xCoordinate > region.maxX
                     || neighbor.yCoordinate > region.maxY)
                 {
-                    region.AddThreshold(new Vector2(neighbor.xCoordinate, neighbor.yCoordinate));
+                    region.AddThreshold(new Vector2Int(neighbor.xCoordinate, neighbor.yCoordinate));
                 }
             }
         }
 
         //Add the region to the thresholdRegionDictionary under each of its thresholds
-        foreach(Vector2 threshold in region.GetThresholds())
+        foreach(Vector2Int threshold in region.GetThresholds())
         {
             if(!thresholdRegionDictionary[threshold].Contains(region))
                 thresholdRegionDictionary[threshold].Add(region);
@@ -391,7 +391,7 @@ public class Grid
     public List<Region> GetRegionNeighbors(Region region)
     {
         List<Region> regionNeighbors = new List<Region>();
-        foreach (Vector2 threshold in region.GetThresholds())
+        foreach (Vector2Int threshold in region.GetThresholds())
         {
             foreach (Region regionToAdd in thresholdRegionDictionary[threshold])
             {
@@ -406,7 +406,7 @@ public class Grid
     /// Grabs the list of Sectors
     /// Note: Only reason I have this function currently is to provide a visual aid of the sectors in the demo scene
     /// </summary>
-    public List<Sector> GetSectors()
+    public HashSet<Sector> GetSectors()
     {
         return sectors;
     }
@@ -415,7 +415,7 @@ public class Grid
     /// Grabs the list of Regions
     /// Note: Only reason I have this function currently is to provide a visual aid of the regions in the demo scene
     /// </summary>
-    public List<Region> GetRegions()
+    public HashSet<Region> GetRegions()
     {
         return regions;
     }
@@ -439,9 +439,9 @@ public class Grid
         if (!traversable)
         {
             //We need to regenerate the thresholds of any regions that had it as a threshold
-            foreach (KeyValuePair<Vector2, List<Region>> thresholdRegion in thresholdRegionDictionary)
+            foreach (KeyValuePair<Vector2Int, List<Region>> thresholdRegion in thresholdRegionDictionary)
             {
-                if (thresholdRegion.Key == new Vector2(tile.xCoordinate, tile.yCoordinate))
+                if (thresholdRegion.Key == new Vector2Int(tile.xCoordinate, tile.yCoordinate))
                 {
                     foreach (Region region in thresholdRegion.Value)
                     {

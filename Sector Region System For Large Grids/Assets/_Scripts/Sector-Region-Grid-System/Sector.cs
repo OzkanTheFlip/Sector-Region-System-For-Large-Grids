@@ -7,14 +7,14 @@ using UnityEngine;
 /// </summary>
 public class Sector
 {
-    public readonly Vector2 lowerBounds;
-    public readonly Vector2 upperBounds;
+    public readonly Vector2Int lowerBounds;
+    public readonly Vector2Int upperBounds;
 
     /// <summary>
     /// Constructor
     /// Sets the upper and lower bounds
     /// </summary>
-    public Sector(Vector2 lowerBounds, Vector2 upperBounds)
+    public Sector(Vector2Int lowerBounds, Vector2Int upperBounds)
     {
         this.lowerBounds = lowerBounds;
         this.upperBounds = upperBounds;
