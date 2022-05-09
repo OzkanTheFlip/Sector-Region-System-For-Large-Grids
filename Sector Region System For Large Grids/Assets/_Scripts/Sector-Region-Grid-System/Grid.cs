@@ -125,15 +125,12 @@ public class Grid
             {
                 for (int y = 0; y < regionNums[0].Count; y++)
                 {
-                    //If you find a -1, flood fill from there
-                    //And restart the loop
+                    //If you find a -1, flood fill from there, then keep going
                     if(regionNums[x][y] == -1)
                     {
                         notFullyFlooded = true;
                         FloodFill(x, y, num, ref regionNums);
                         num++;
-                        x = regionNums.Count;
-                        y = regionNums[0].Count;
                     }
                 }
             }

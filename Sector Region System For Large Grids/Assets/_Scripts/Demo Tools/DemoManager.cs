@@ -78,14 +78,27 @@ public class DemoManager : MonoBehaviour
 
         if (showRegions)
         {
-            if (mouseRegion != grid.GetTileRegion(grid.GetTile(x1, y1)))
+            if (grid.GetTileRegion(grid.GetTile(x1, y1)) != null && mouseRegion != grid.GetTileRegion(grid.GetTile(x1, y1)))
             {
+                foreach (Tile tile in mouseRegion.GetTiles())
+                {
+                    SpriteRenderer[] spriteRenderers = displayTiles[tile.xCoordinate][tile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
+                    spriteRenderers[1].color = Color.clear;
+                }
+                foreach (Region neighborRegion in grid.GetRegionNeighbors(mouseRegion))
+                {
+                    foreach (Tile regionTile in neighborRegion.GetTiles())
+                    {
+                        SpriteRenderer[] spriteRenderers = displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
+                        spriteRenderers[1].color = Color.clear;
+                    }
+                }
+
                 mouseRegion = grid.GetTileRegion(grid.GetTile(x1, y1));
-                DisplayGrid();
 
                 if (x1 >= 0 && x1 < gridWidth && y1 >= 0 && y1 < gridHeight)
                 {
-                    DisplayRegion(grid.GetTile(x1, y1));
+                    DisplayRegion(mouseRegion);
                 }
             }
         }
@@ -141,13 +154,11 @@ public class DemoManager : MonoBehaviour
         }
     }
 
-    private void DisplayRegion(Tile tile)
+    private void DisplayRegion(Region region)
     {
-        if (grid.GetTileRegion(tile) == null)
-            return;
         timer += Time.deltaTime;
 
-        foreach(Tile regionTile in grid.GetTileRegion(tile).GetTiles())
+        foreach(Tile regionTile in region.GetTiles())
         {
             SpriteRenderer[] spriteRenderers = displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
             spriteRenderers[1].color = new Color(1f, 1f, 0, .4f);
@@ -155,7 +166,7 @@ public class DemoManager : MonoBehaviour
 
         if (timer >= 2f && blinkRegionThresholds)
         {
-            foreach (Vector2Int threshold in grid.GetTileRegion(tile).GetThresholds())
+            foreach (Vector2Int threshold in region.GetThresholds())
             {
                 SpriteRenderer[] spriteRenderers = displayTiles[threshold.x][threshold.y].GetComponentsInChildren<SpriteRenderer>();
                 spriteRenderers[1].color = new Color(1f, 0, 1f, .4f);
@@ -167,9 +178,9 @@ public class DemoManager : MonoBehaviour
         if (showRegionNeigbors)
         {
             int num = 0;
-            foreach (Region region in grid.GetRegionNeighbors(grid.GetTileRegion(tile)))
+            foreach (Region neighborRegion in grid.GetRegionNeighbors(region))
             {
-                foreach (Tile regionTile in region.GetTiles())
+                foreach (Tile regionTile in neighborRegion.GetTiles())
                 {
                     SpriteRenderer[] spriteRenderers = displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
                     spriteRenderers[1].color = colors[num];
