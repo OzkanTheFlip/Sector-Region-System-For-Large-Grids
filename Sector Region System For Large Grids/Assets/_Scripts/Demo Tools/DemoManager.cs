@@ -32,7 +32,8 @@ public class DemoManager : MonoBehaviour
 
     private Grid grid;
 
-    private List<List<GameObject>> displayTiles = new List<List<GameObject>>();
+    private List<List<SpriteRenderer>> displayTileSpriteRenderers = new List<List<SpriteRenderer>>();
+    private List<List<SpriteRenderer>> displayTileOverlapSpriteRenderers = new List<List<SpriteRenderer>>();
 
     private float timer = 0f;
 
@@ -46,12 +47,14 @@ public class DemoManager : MonoBehaviour
 
         for (int x = 0; x < gridWidth; x++)
         {
-            displayTiles.Add(new List<GameObject>());
+            displayTileSpriteRenderers.Add(new List<SpriteRenderer>());
+            displayTileOverlapSpriteRenderers.Add(new List<SpriteRenderer>());
             for (int y = 0; y < gridHeight; y++)
             {
                 GameObject newDisplayTile = Instantiate(displayTile);
                 newDisplayTile.transform.position = new Vector3(x, y, 0);
-                displayTiles[x].Add(newDisplayTile);
+                displayTileSpriteRenderers[x].Add(newDisplayTile.GetComponent<SpriteRenderer>());
+                displayTileOverlapSpriteRenderers[x].Add(newDisplayTile.GetComponentsInChildren<SpriteRenderer>()[1]);
             }
         }
 
@@ -83,15 +86,13 @@ public class DemoManager : MonoBehaviour
             {
                 foreach (Tile tile in mouseRegion.GetTiles())
                 {
-                    SpriteRenderer[] spriteRenderers = displayTiles[tile.xCoordinate][tile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
-                    spriteRenderers[1].color = Color.clear;
+                    displayTileOverlapSpriteRenderers[tile.xCoordinate][tile.yCoordinate].color = Color.clear;
                 }
                 foreach (Region neighborRegion in grid.GetRegionNeighbors(mouseRegion))
                 {
                     foreach (Tile regionTile in neighborRegion.GetTiles())
                     {
-                        SpriteRenderer[] spriteRenderers = displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
-                        spriteRenderers[1].color = Color.clear;
+                        displayTileOverlapSpriteRenderers[regionTile.xCoordinate][regionTile.yCoordinate].color = Color.clear;
                     }
                 }
 
@@ -106,8 +107,7 @@ public class DemoManager : MonoBehaviour
             {
                 foreach (Vector2Int threshold in mouseRegion.GetThresholds())
                 {
-                    SpriteRenderer[] spriteRenderers = displayTiles[threshold.x][threshold.y].GetComponentsInChildren<SpriteRenderer>();
-                    spriteRenderers[1].color = new Color(1f, 0, 1f, .4f);
+                    displayTileOverlapSpriteRenderers[threshold.x][threshold.y].color = new Color(1f, 0, 1f, .4f);
                 }
             }
             timer += Time.deltaTime;
@@ -120,16 +120,14 @@ public class DemoManager : MonoBehaviour
             if (Input.GetMouseButton(0) && !grid.GetTile(x1,y1).traversable)
             {
                 grid.SetTileTraversable(grid.GetTile(x1, y1), true);
-                SpriteRenderer[] spriteRenderers = displayTiles[x1][y1].GetComponentsInChildren<SpriteRenderer>();
-                spriteRenderers[0].color = grid.GetTile(x1, y1).traversable ? Color.white : Color.grey;
-                spriteRenderers[1].color = Color.clear;
+                displayTileSpriteRenderers[x1][y1].color = grid.GetTile(x1, y1).traversable ? Color.white : Color.grey;
+                displayTileOverlapSpriteRenderers[x1][y1].color = Color.clear;
             }
             else if (Input.GetMouseButton(1) && grid.GetTile(x1, y1).traversable)
             {
                 grid.SetTileTraversable(grid.GetTile(x1, y1), false);
-                SpriteRenderer[] spriteRenderers = displayTiles[x1][y1].GetComponentsInChildren<SpriteRenderer>();
-                spriteRenderers[0].color = grid.GetTile(x1, y1).traversable ? Color.white : Color.grey;
-                spriteRenderers[1].color = Color.clear;
+                displayTileSpriteRenderers[x1][y1].color = grid.GetTile(x1, y1).traversable ? Color.white : Color.grey;
+                displayTileOverlapSpriteRenderers[x1][y1].color = Color.clear;
             }
         }
     }
@@ -159,9 +157,8 @@ public class DemoManager : MonoBehaviour
         {
             for (int y = 0; y < gridHeight; y++)
             {
-                SpriteRenderer[] spriteRenderers = displayTiles[x][y].GetComponentsInChildren<SpriteRenderer>();
-                spriteRenderers[0].color = grid.GetTile(x, y).traversable ? Color.white : Color.grey;
-                spriteRenderers[1].color = Color.clear;
+                displayTileSpriteRenderers[x][y].color = grid.GetTile(x, y).traversable ? Color.white : Color.grey;
+                displayTileOverlapSpriteRenderers[x][y].color = Color.clear;
             }
         }
     }
@@ -170,8 +167,7 @@ public class DemoManager : MonoBehaviour
     {
         foreach(Tile regionTile in region.GetTiles())
         {
-            SpriteRenderer[] spriteRenderers = displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
-            spriteRenderers[1].color = new Color(1f, 1f, 0, .4f);
+            displayTileOverlapSpriteRenderers[regionTile.xCoordinate][regionTile.yCoordinate].color = new Color(1f, 1f, 0, .4f);
         }
 
         if (showRegionNeigbors)
@@ -181,8 +177,7 @@ public class DemoManager : MonoBehaviour
             {
                 foreach (Tile regionTile in neighborRegion.GetTiles())
                 {
-                    SpriteRenderer[] spriteRenderers = displayTiles[regionTile.xCoordinate][regionTile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
-                    spriteRenderers[1].color = colors[num];
+                    displayTileOverlapSpriteRenderers[regionTile.xCoordinate][regionTile.yCoordinate].color = colors[num];
                 }
                 num++;
                 if (num >= colors.Count - 1)
@@ -205,8 +200,8 @@ public class DemoManager : MonoBehaviour
                 {
                     for (int y = sector.lowerBounds.y; y <= sector.upperBounds.y; y++)
                     {
-                        SpriteRenderer[] spriteRenderers = displayTiles[x][y].GetComponentsInChildren<SpriteRenderer>();
-                        spriteRenderers[1].color = colors[num - colors.Count * index];
+                        SpriteRenderer[] spriteRenderers = displayTileSpriteRenderers[x][y].GetComponentsInChildren<SpriteRenderer>();
+                        displayTileOverlapSpriteRenderers[x][y].color = colors[num - colors.Count * index];
                     }
                 }
                 num++;
@@ -246,8 +241,7 @@ public class DemoManager : MonoBehaviour
             {
                 foreach (Tile tile in region.GetTiles())
                 {
-                    SpriteRenderer[] spriteRenderers = displayTiles[tile.xCoordinate][tile.yCoordinate].GetComponentsInChildren<SpriteRenderer>();
-                    spriteRenderers[1].color = colors[region.room - (int)(colors.Count * Mathf.Floor(region.room / colors.Count))];
+                    displayTileOverlapSpriteRenderers[tile.xCoordinate][tile.yCoordinate].color = colors[region.room - (int)(colors.Count * Mathf.Floor(region.room / colors.Count))];
                 }
             }
         }

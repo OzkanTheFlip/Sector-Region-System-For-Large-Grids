@@ -2098,19 +2098,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: gridWidth
-      value: 250
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: gridHeight
-      value: 250
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: sectorWidth
-      value: 20
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: sectorHeight
-      value: 20
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: showRegionNeigbors
