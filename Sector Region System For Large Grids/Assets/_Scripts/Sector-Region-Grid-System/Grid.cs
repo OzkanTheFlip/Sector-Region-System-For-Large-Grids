@@ -377,6 +377,8 @@ public class Grid
     /// </summary>
     public Region GetTileRegion(Tile tile)
     {
+        if (!tile.traversable) return null;
+
         foreach (Region region in regions)
         {
             if (region.Contains(tile))
@@ -440,15 +442,9 @@ public class Grid
         if (!traversable)
         {
             //We need to regenerate the thresholds of any regions that had it as a threshold
-            foreach (KeyValuePair<Vector2Int, List<Region>> thresholdRegion in thresholdRegionDictionary)
+            foreach (Region region in thresholdRegionDictionary[new Vector2Int(tile.xCoordinate, tile.yCoordinate)])
             {
-                if (thresholdRegion.Key == new Vector2Int(tile.xCoordinate, tile.yCoordinate))
-                {
-                    foreach (Region region in thresholdRegion.Value)
-                    {
-                        GenerateThresholds(region);
-                    }
-                }
+                GenerateThresholds(region);
             }
         }
         //If we made the tile newly traversable
@@ -456,19 +452,21 @@ public class Grid
         {
             //We need to regenerate the thresholds of any region that contains a traversable neighbor to the tile
             List<Region> regionsToGenerateThresholds = new List<Region>();
-            foreach(Tile neighbor in GetNeighbors(tile))
+            foreach (Tile neighbor in GetNeighbors(tile))
             {
                 //If the neighbor has a region and it's not already in the list
-                if (GetTileRegion(neighbor) != null && !regionsToGenerateThresholds.Contains(GetTileRegion(neighbor)))
-                    regionsToGenerateThresholds.Add(GetTileRegion(neighbor));
+                Region neighborRegion = GetTileRegion(neighbor);
+                if (neighborRegion != null && !regionsToGenerateThresholds.Contains(neighborRegion))
+                    regionsToGenerateThresholds.Add(neighborRegion);
             }
-            foreach(Region region in regionsToGenerateThresholds)
+            foreach (Region region in regionsToGenerateThresholds)
             {
                 GenerateThresholds(region);
             }
         }
 
         //Flood fill a new room for each region without a room number
+        //Now causing performance hiccup for making a tile traversable
         foreach (Region region in regions)
         {
             if (region.room == -1)

@@ -2106,11 +2106,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: sectorWidth
-      value: 32
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: sectorHeight
-      value: 32
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: showRegionNeigbors
