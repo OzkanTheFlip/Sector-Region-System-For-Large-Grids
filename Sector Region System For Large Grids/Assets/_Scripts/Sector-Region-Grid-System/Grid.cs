@@ -20,7 +20,10 @@ public class Grid
 
     //Each (x,y) coordinate is a Threshold for a particular number of Regions
     //If 2 Regions share any 1 Threshold, they are Neighbors
-    Dictionary<Vector2Int, List<Region>> thresholdRegionDictionary = new Dictionary<Vector2Int, List<Region>>();
+    private Dictionary<Vector2Int, List<Region>> thresholdRegionDictionary = new Dictionary<Vector2Int, List<Region>>();
+
+    //Room id number, a room is a section of map floodfilled by region
+    private int roomIndex = 0;
 
     //The width and height of the grid
     public readonly int gridWidth;
@@ -267,8 +270,9 @@ public class Grid
         {
             region.room = -1;
         }
+
         //Keep track of the number of rooms flood filled
-        int roomNum = 0;
+        roomIndex = 0;
         bool notFullyFlooded = true;
         while (notFullyFlooded)
         {
@@ -279,8 +283,8 @@ public class Grid
                 if (region.room == -1)
                 {
                     notFullyFlooded = true;
-                    FloodFillRegions(region, roomNum);
-                    roomNum++;
+                    FloodFillRegions(region, roomIndex);
+                    roomIndex++;
                     break;
                 }
             }
@@ -290,14 +294,14 @@ public class Grid
     /// <summary>
     /// Flood Fill Algorithm
     /// </summary>
-    private void FloodFillRegions(Region region, int id)
+    private void FloodFillRegions(Region region, int id, bool reflood = false)
     {
-        if (region.room == -1)
+        if ((reflood && region.room != id) || region.room == -1)
         {
             region.room = id;
             foreach (Region neighbor in GetRegionNeighbors(region))
             {
-                FloodFillRegions(neighbor, id);
+                FloodFillRegions(neighbor, id, reflood);
             }
         }
     }
@@ -464,6 +468,14 @@ public class Grid
             }
         }
 
-        SetRooms();
+        //Flood fill a new room for each region without a room number
+        foreach (Region region in regions)
+        {
+            if (region.room == -1)
+            {
+                roomIndex++;
+                FloodFillRegions(region, roomIndex, true);
+            }
+        }
     }
 }
