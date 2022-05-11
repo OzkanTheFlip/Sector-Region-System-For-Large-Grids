@@ -446,6 +446,16 @@ public class Grid
             {
                 GenerateThresholds(region);
             }
+
+            //Flood fill a new room for each region without a room number
+            foreach (Region region in regions)
+            {
+                if (region.room == -1)
+                {
+                    roomIndex++;
+                    FloodFillRegions(region, roomIndex, true);
+                }
+            }
         }
         //If we made the tile newly traversable
         else
@@ -463,16 +473,43 @@ public class Grid
             {
                 GenerateThresholds(region);
             }
-        }
 
-        //Flood fill a new room for each region without a room number
-        //Now causing performance hiccup for making a tile traversable
-        foreach (Region region in regions)
-        {
-            if (region.room == -1)
+            //Generate new rooms
+            foreach (Region region in regions)
             {
-                roomIndex++;
-                FloodFillRegions(region, roomIndex, true);
+                if (region.room == -1)
+                {
+                    Dictionary<int, int> roomCounts = new Dictionary<int, int>();
+                    //Find each neighbor with a valid room number
+                    foreach (Region neighbor in GetRegionNeighbors(region))
+                    {
+                        if(neighbor.room != -1 && !roomCounts.ContainsKey(neighbor.room))
+                            roomCounts.Add(neighbor.room, 0);
+                    }
+
+                    //If there are no neighbors with a valid room number, flood fill a new room
+                    if (roomCounts.Count == 0)
+                    {
+                        roomIndex++;
+                        FloodFillRegions(region, roomIndex, true);
+                        continue;
+                    }
+
+                    //If there's more than one room number, pick the one with the most rooms
+                    foreach (Region region1 in regions)
+                    {
+                        if (region1.room != -1 && roomCounts.ContainsKey(region1.room))
+                            roomCounts[region1.room]++;
+                    }
+                    int largestRoom = -1;
+                    foreach(KeyValuePair<int,int> roomCount in roomCounts)
+                    {
+                        if (largestRoom == -1 || roomCounts[largestRoom] < roomCount.Value)
+                            largestRoom = roomCount.Key;
+                    }
+                    //Flood fill using the neighbor's room number
+                    FloodFillRegions(region, largestRoom, true);
+                }
             }
         }
     }
