@@ -17,8 +17,15 @@ Another downside of A* on a grid of tiles that can change their traversability i
 This grid system aims to alleviate these inefficiency problems that come from using a normal grid. This system was inspired by the Rimworld developers who use similar data structures to break down their grid for Rimworld.
 
 The Grid
-Same as a normal grid system this class is comprised of an NxM grid of Tiles
+
+Same as a normal grid system this class is comprised of an NxM grid of a mix of traversable and intraversable Tiles
+
+<img src="https://user-images.githubusercontent.com/104275328/167961822-8d78aa3b-432a-4a6a-ae13-ec52340ab3df.png" width="702" height="639" />
 
 The grid is also broken down into Sectors
 
+<img src="https://user-images.githubusercontent.com/104275328/167961833-8c5ebdc2-c504-442f-9cc0-9793b56abced.png" width="702" height="639" />
+
 Each Sector is broken down further into Regions
+
+<img src="https://user-images.githubusercontent.com/104275328/167961842-fdadc1fc-ba14-41ed-9675-88e609e848d6.png" width="702" height="639" />
