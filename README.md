@@ -46,4 +46,7 @@ Recalculating your A* path over and over also goes faster if you A* by region fi
 
 Finally if we need to find the closest tile of a specific attribute, we can search our neighbors first, then their neighbors and so on until we find it. Going back to our example of an item being only 2 tiles away but is seperated by a wall, the item's region won't be a neighbor so we won't look there first.
 
-## What you'll 
+## What you'll find in this Unity project
+
+- Classes for Grid, Sector, Region, and Tile
+- A Demo Scene that lets you generate and display a Grid with the options to see the Sectors, see the Regions with or without its neighbors and thresholds, and see the rooms. You can also Right Click to make a tile intraversable or Left Click to make a tile traversable
