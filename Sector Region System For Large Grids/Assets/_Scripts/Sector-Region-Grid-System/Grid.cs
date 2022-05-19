@@ -31,7 +31,7 @@ public class Grid
 
     /// <summary>
     /// Constructor
-    /// Generates the grid, the Sectors, and the initial Regions
+    /// Generates the grid with all traversable tiles, the Sectors, and the initial Regions
     /// </summary>
     public Grid(int gridWidth, int gridHeight, int sectorWidth, int sectorHeight)
     {
@@ -50,7 +50,61 @@ public class Grid
         }
 
         //Generate Sectors of grid
+        GenerateSectors(sectorWidth, sectorHeight);
 
+        //Generate initial Regions of grid
+        foreach (Sector sector in sectors)
+        {
+            GenerateRegions(sector);
+        }
+
+        //Set the rooms
+        SetRooms();
+    }
+
+    /// <summary>
+    /// Constructor
+    /// Generates the grid, the Sectors, and the initial Regions based off of an input sprite
+    /// </summary>
+    public Grid(Sprite gridSprite, int sectorWidth, int sectorHeight)
+    {
+        Texture2D texture = gridSprite.texture;
+
+        gridWidth = texture.width;
+        gridHeight = texture.height;
+
+        //Generate grid of Tiles
+        for (int x = 0; x < gridWidth; x++)
+        {
+            tiles.Add(new List<Tile>());
+            for (int y = 0; y < gridHeight; y++)
+            {
+                //If the pixel is white it's traversable, otherwise it's intraversable
+                Color pixel = texture.GetPixel(x, y);
+                tiles[x].Add(new Tile(pixel == Color.white, x, y));
+                thresholdRegionDictionary.Add(new Vector2Int(x, y), new List<Region>());
+            }
+        }
+
+        //Generate Sectors of grid
+        GenerateSectors(sectorWidth, sectorHeight);
+
+        //Generate initial Regions of grid
+        foreach (Sector sector in sectors)
+        {
+            GenerateRegions(sector);
+        }
+
+        //Set the rooms
+        SetRooms();
+    }
+
+
+    /// <summary>
+    /// Generates the Sectors for grid with a base width and height
+    /// </summary>
+    private void GenerateSectors(int sectorWidth, int sectorHeight)
+    {
         //Keep track of the number of sectors you've made
         int num = 0;
         //Start at (0,0) as the first Sector's lower bound
@@ -62,7 +116,7 @@ public class Grid
         {
             int xSubtrahend = 1;
             int ySubtrahend = 1;
-            while(xIndex + sectorWidth - xSubtrahend >= gridWidth)
+            while (xIndex + sectorWidth - xSubtrahend >= gridWidth)
             {
                 xSubtrahend++;
             }
@@ -73,7 +127,7 @@ public class Grid
             //Create a new Sector with the lower bound of (x,y) and an upper bound of (x+sectorWidth-1, y+sectorWidth-1)
             //Note: If you can't fit a full SECTOR_WIDTHxSECTOR_HEIGHT sector, that sector will be smaller
             //And the upperbound needs to subtract more than 1 from the x and/or y coordinate, hence the subtrahends
-            sectors.Add(new Sector(new Vector2Int(xIndex, yIndex), new Vector2Int(xIndex+sectorWidth-xSubtrahend, yIndex+sectorHeight-ySubtrahend)));
+            sectors.Add(new Sector(new Vector2Int(xIndex, yIndex), new Vector2Int(xIndex + sectorWidth - xSubtrahend, yIndex + sectorHeight - ySubtrahend)));
             //Shift over the xIndex for the next Sector
             xIndex += sectorWidth;
             //If you've filled up this row of sectors, reset the xIndex and shift up the yIndex
@@ -84,15 +138,6 @@ public class Grid
                 yIndex += sectorHeight;
             }
         }
-
-        //Generate initial Regions of grid
-        foreach (Sector sector in sectors)
-        {
-            GenerateRegions(sector);
-        }
-
-        //Set the rooms
-        SetRooms();
     }
 
     /// <summary>

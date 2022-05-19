@@ -2098,19 +2098,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: gridWidth
-      value: 400
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: gridHeight
-      value: 400
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: sectorWidth
       value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
+      propertyPath: spriteInput
+      value: 
+      objectReference: {fileID: 21300000, guid: 267f53a932c2fd6418a5e213fa89bdaf, type: 3}
+    - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: sectorHeight
       value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
+      propertyPath: useSpriteInput
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8385658831614711932, guid: 84dbda266ac15464e8b2162d2d013128, type: 3}
       propertyPath: showRegionNeigbors

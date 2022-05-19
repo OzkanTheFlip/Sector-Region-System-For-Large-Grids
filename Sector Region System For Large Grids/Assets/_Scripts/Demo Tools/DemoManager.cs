@@ -9,6 +9,12 @@ public class DemoManager : MonoBehaviour
     private int gridWidth;
     [SerializeField]
     private int gridHeight;
+
+    [SerializeField]
+    private bool useSpriteInput;
+    [SerializeField]
+    private Sprite spriteInput;
+
     [SerializeField]
     private int sectorWidth;
     [SerializeField]
@@ -41,9 +47,13 @@ public class DemoManager : MonoBehaviour
 
     private void Start()
     {
-        grid = new Grid(gridWidth, gridHeight, sectorWidth, sectorHeight);
+        grid = !useSpriteInput ? new Grid(gridWidth, gridHeight, sectorWidth, sectorHeight) : new Grid(spriteInput, sectorWidth, sectorHeight);
 
-        GenerateWalls();
+        if (useSpriteInput)
+        {
+            gridWidth = spriteInput.texture.width;
+            gridHeight = spriteInput.texture.height;
+        }    
 
         for (int x = 0; x < gridWidth; x++)
         {
@@ -81,7 +91,7 @@ public class DemoManager : MonoBehaviour
 
         if (showRegions)
         {
-            if ((grid.GetTileRegion(grid.GetTile(x1, y1)) != null && mouseRegion != grid.GetTileRegion(grid.GetTile(x1, y1)))
+            if ((grid.GetTile(x1, y1) != null && grid.GetTileRegion(grid.GetTile(x1, y1)) != null && mouseRegion != grid.GetTileRegion(grid.GetTile(x1, y1)))
                 || (timer >= 2f && blinkRegionThresholds))
             {
                 foreach (Tile tile in mouseRegion.GetTiles())
@@ -128,25 +138,6 @@ public class DemoManager : MonoBehaviour
                 grid.SetTileTraversable(grid.GetTile(x1, y1), false);
                 displayTileSpriteRenderers[x1][y1].color = grid.GetTile(x1, y1).traversable ? Color.white : Color.grey;
                 displayTileOverlapSpriteRenderers[x1][y1].color = Color.clear;
-            }
-        }
-    }
-
-    private void GenerateWalls()
-    {
-        for (int x = 0; x < gridWidth; x++)
-        {
-            for (int y = gridHeight/2; y < gridHeight/2+1; y++)
-            {
-                grid.SetTileTraversable(grid.GetTile(x, y), false);
-            }
-        }
-
-        for (int x = gridWidth / 2; x < gridWidth / 2 + 1; x++)
-        {
-            for (int y = 0; y < gridHeight; y++)
-            {
-                grid.SetTileTraversable(grid.GetTile(x, y), false);
             }
         }
     }
