@@ -220,9 +220,9 @@ public class Grid
         foreach(Region removeRegion in removeRegions)
         {
             regions.Remove(removeRegion);
-            foreach(KeyValuePair<Vector2Int, List<Region>> regionList in thresholdRegionDictionary)
+            foreach(Vector2Int threshold in removeRegion.GetThresholds())
             {
-                regionList.Value.Remove(removeRegion);
+                thresholdRegionDictionary[threshold].Remove(removeRegion);
             }
         }
 
