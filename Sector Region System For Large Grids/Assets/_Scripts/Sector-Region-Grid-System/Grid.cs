@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
 /// <summary>
@@ -20,10 +21,6 @@ public class Grid
     private HashSet<Region> regions = new HashSet<Region>();
 
     private HashSet<Threshold> thresholdMap = new HashSet<Threshold>();
-
-    //Each (x,y) coordinate is a Threshold for a particular number of Regions
-    //If 2 Regions share any 1 Threshold, they are Neighbors
-    private Dictionary<Vector2Int, List<Region>> thresholdRegionDictionary = new Dictionary<Vector2Int, List<Region>>();
 
     //Room id number, a room is a section of map floodfilled by region
     private int roomIndex = 0;
@@ -48,7 +45,6 @@ public class Grid
             for(int y = 0; y < gridHeight; y++)
             {
                 tiles[x].Add(new Tile(true, x, y));
-                thresholdRegionDictionary.Add(new Vector2Int(x, y), new List<Region>());
             }
         }
 
@@ -63,6 +59,8 @@ public class Grid
 
         //Set the rooms
         SetRooms();
+
+
     }
 
     /// <summary>
@@ -85,7 +83,6 @@ public class Grid
                 //If the pixel is white it's traversable, otherwise it's intraversable
                 Color pixel = texture.GetPixel(x, y);
                 tiles[x].Add(new Tile(pixel == Color.white, x, y));
-                thresholdRegionDictionary.Add(new Vector2Int(x, y), new List<Region>());
             }
         }
 
@@ -97,6 +94,9 @@ public class Grid
         {
             GenerateRegions(sector);
         }
+
+        //Connect the thresholds of the region
+        ConnectThresholds();
 
         //Set the rooms
         SetRooms();
@@ -223,10 +223,6 @@ public class Grid
         foreach(Region removeRegion in removeRegions)
         {
             regions.Remove(removeRegion);
-            foreach(Vector2Int threshold in removeRegion.GetThresholds())
-            {
-                thresholdRegionDictionary[threshold].Remove(removeRegion);
-            }
         }
 
         //Generate thresholds for each new region and add them to the Regions list!
@@ -274,7 +270,7 @@ public class Grid
         foreach (Tile regionTile in regionTiles)
         {
             bool isThreshold = false;
-            //Loop through each tile's neighbors
+            //Loop through each of the tile's neighbors
             List<Tile> regionTileNeighbors = GetNeighbors(regionTile);
             foreach(Tile regionTileNeighbor in regionTileNeighbors)
             {
@@ -285,14 +281,61 @@ public class Grid
 
             //If there were any neighbors in a different region, create a threshold for the region
             if(isThreshold)
-                regionThresholds.Add(new Threshold(regionTile));
+                regionThresholds.Add(new Threshold(regionTile, region.room));
         }
 
-        //Set all the thresholds to neighbors of eachother
+        //Loop through all the thresholds you made
         foreach(Threshold regionThreshold in regionThresholds)
         {
+            //Set their neighbors to eachother
+            foreach (Threshold neighbor in regionThresholds)
+            {
+                //If it's not itself
+                if(neighbor != regionThreshold)
+                {
+                    //Add it as a neighbor and grab distance to cache
+                    regionThreshold.AddIntraNeighbor(neighbor, GetDistance(regionThreshold.tile, neighbor.tile));
+                }
+            }
 
+            //Add it to the region
+            region.AddThreshold(regionThreshold);
         }
+    }
+
+    private void ConnectThresholds()
+    {
+        //For each threshold
+        foreach (Region region in regions)
+        {
+            foreach (Threshold threshold in region.GetThresholds())
+            {
+                //For each of its neigbors
+                foreach (Tile neighbor in GetNeighbors(threshold.tile))
+                {
+                    //Get the threshold that has this neighbor
+                    Threshold neighborThreshold = GetThreshold(neighbor);
+
+                    //If we found a threshold with the neighbor and it's in a different region
+                    if (neighborThreshold != null && !region.ContainsThreshold(neighborThreshold))
+                    {
+                        //Add them as neighbors with a distance of 1
+                        threshold.AddInterNeighbor(neighborThreshold);
+                    }
+                }
+            }
+        }
+    }
+
+    private Threshold GetThreshold(Tile tile)
+    {
+        foreach(Threshold threshold in thresholdMap)
+        {
+            if (threshold.tile == tile)
+                return threshold;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -534,12 +577,12 @@ public class Grid
     public List<Region> GetRegionNeighbors(Region region)
     {
         List<Region> regionNeighbors = new List<Region>();
-        foreach (Vector2Int threshold in region.GetThresholds())
+        foreach(Threshold threshold in region.GetThresholds())
         {
-            foreach (Region regionToAdd in thresholdRegionDictionary[threshold])
+            foreach(NeighborThreshold neighborThreshold in threshold.interNeighbors)
             {
-                if (!regionNeighbors.Contains(regionToAdd) && regionToAdd != region)
-                    regionNeighbors.Add(regionToAdd);
+                if(!regionNeighbors.Contains(GetTileRegion(neighborThreshold.threshold.tile)))
+                    regionNeighbors.Add(GetTileRegion(neighborThreshold.threshold.tile));
             }
         }
         return regionNeighbors;
@@ -582,10 +625,10 @@ public class Grid
         if (!traversable)
         {
             //We need to regenerate the thresholds of any regions that had it as a threshold
-            foreach (Region region in thresholdRegionDictionary[new Vector2Int(tile.xCoordinate, tile.yCoordinate)])
-            {
-                GenerateThresholds(region);
-            }
+            //foreach (Region region in thresholdRegionDictionary[new Vector2Int(tile.xCoordinate, tile.yCoordinate)])
+            //{
+            //    GenerateThresholds(region);
+            //}
 
             //Flood fill a new room for each region without a room number
             foreach (Region region in regions)

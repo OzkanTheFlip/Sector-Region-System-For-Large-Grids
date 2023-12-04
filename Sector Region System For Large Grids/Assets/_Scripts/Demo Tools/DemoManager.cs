@@ -123,10 +123,10 @@ public class DemoManager : MonoBehaviour
             }
             else if (timer < 2f && blinkRegionThresholds)
             {
-                foreach (Vector2Int threshold in mouseRegion.GetThresholds())
-                {
-                    displayTileOverlapSpriteRenderers[threshold.x][threshold.y].color = new Color(1f, 0, 1f, .4f);
-                }
+                //foreach (Vector2Int threshold in mouseRegion.GetThresholds())
+                //{
+                //    displayTileOverlapSpriteRenderers[threshold.x][threshold.y].color = new Color(1f, 0, 1f, .4f);
+                //}
             }
             timer += Time.deltaTime;
             if (timer >= 4f)
