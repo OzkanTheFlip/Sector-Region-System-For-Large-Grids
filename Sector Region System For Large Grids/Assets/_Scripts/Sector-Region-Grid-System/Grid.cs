@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -17,6 +18,8 @@ public class Grid
     private HashSet<Sector> sectors = new HashSet<Sector>();
     //Each Sector is broken down into Regions
     private HashSet<Region> regions = new HashSet<Region>();
+
+    private HashSet<Threshold> thresholdMap = new HashSet<Threshold>();
 
     //Each (x,y) coordinate is a Threshold for a particular number of Regions
     //If 2 Regions share any 1 Threshold, they are Neighbors
@@ -264,44 +267,31 @@ public class Grid
     /// </summary>
     private void GenerateThresholds(Region region)
     {
-        //Clear the current thresholds
-        region.ClearThresholds();
+        List<Threshold> regionThresholds = new List<Threshold>();
 
         //Loop through the region's tiles
         List<Tile> regionTiles = region.GetTiles();
         foreach (Tile regionTile in regionTiles)
         {
-            //If the tile lines the bottom or left of the region, it's a threshold coordinate
-            if (regionTile.xCoordinate == region.minX
-                || regionTile.yCoordinate == region.minY)
+            bool isThreshold = false;
+            //Loop through each tile's neighbors
+            List<Tile> regionTileNeighbors = GetNeighbors(regionTile);
+            foreach(Tile regionTileNeighbor in regionTileNeighbors)
             {
-                region.AddThreshold(new Vector2Int(regionTile.xCoordinate, regionTile.yCoordinate));
+                //If the neighbor isn't in this region then this tile is a threshold
+                if (!region.Contains(regionTileNeighbor))
+                    isThreshold = true;
             }
 
-            //Loop through each region's neighbors
-            List<Tile> neighbors = GetNeighbors(regionTile);
-            foreach (Tile neighbor in neighbors)
-            {
-                //If the neighbor is also in this region or it's not traversable, skip it
-                if (region.Contains(neighbor) || !neighbor.traversable)
-                    continue;
-
-                //If the neighbor is in a different region, is traversable,
-                //And has a coordinate greater than the region's maxes, it's a threshold coordinate
-                //Note: If you don't support diagonal crossings, add the other coordinate being the same as regionTile's on each line
-                if (neighbor.xCoordinate > region.maxX
-                    || neighbor.yCoordinate > region.maxY)
-                {
-                    region.AddThreshold(new Vector2Int(neighbor.xCoordinate, neighbor.yCoordinate));
-                }
-            }
+            //If there were any neighbors in a different region, create a threshold for the region
+            if(isThreshold)
+                regionThresholds.Add(new Threshold(regionTile));
         }
 
-        //Add the region to the thresholdRegionDictionary under each of its thresholds
-        foreach(Vector2Int threshold in region.GetThresholds())
+        //Set all the thresholds to neighbors of eachother
+        foreach(Threshold regionThreshold in regionThresholds)
         {
-            if(!thresholdRegionDictionary[threshold].Contains(region))
-                thresholdRegionDictionary[threshold].Add(region);
+
         }
     }
 
@@ -349,6 +339,111 @@ public class Grid
                 FloodFillRegions(neighbor, id, reflood);
             }
         }
+    }
+
+    //A* Pathfinding
+    public List<Tile> FindPath(Tile startTile, Tile endTile)
+    {
+        //Tiles to evaluate
+        List<PathfindingTile> openSet = new List<PathfindingTile>();
+        //Tiles already evaluated
+        List<PathfindingTile> closedSet = new List<PathfindingTile>();
+        //Start with startTile
+        openSet.Add(new PathfindingTile(startTile, 0, 0, -1));
+
+        //Go while there are tiles to evaluate
+        while(openSet.Count > 0)
+        {
+            //Tile we're evaluating
+            PathfindingTile currentTile = openSet[0];
+
+            //Loop through the tiles in the open set
+            for (int i = 1; i < openSet.Count; i++)
+            {
+                //Get the tile with the lowest fCost in currentTile. If there's a tie, take the tile with the lower hCost
+                if (openSet[i].fCost <= currentTile.fCost)
+                {
+                    if(openSet[i].hCost < currentTile.hCost)
+                        currentTile = openSet[i];
+                }
+            }
+
+            //Move the current tile with the lowest fCost from the open set to the closed set
+            openSet.Remove(currentTile);
+            closedSet.Add(currentTile);
+
+            //If the current tile is the end tile, we're done pathfinding
+            if(currentTile.tile == endTile)
+            {
+                return RetracePath(startTile, currentTile, closedSet);
+            }
+
+            //Loop through each neighbor and add it to the open set if it's valid for evaluation
+            foreach(Tile neighbor in GetNeighbors(currentTile.tile))
+            {
+                //Find out if the neighbor is valid for evaluation
+                bool validForEvaluation = true;
+
+                //If it's not traversable
+                if (!neighbor.traversable)
+                    validForEvaluation = false;
+
+                //If it's in the closed set
+                foreach(PathfindingTile closedSetTile in closedSet)
+                {
+                    if (closedSetTile.tile == neighbor)
+                        validForEvaluation = false;
+                }
+
+                if (!validForEvaluation)
+                    continue;
+
+                //Find out if the neighbor is already in the open set
+                int inOpenSet = -1;
+
+                //If it's in the open set
+                foreach (PathfindingTile openSetTile in openSet)
+                {
+                    if (openSetTile.tile == neighbor)
+                        inOpenSet = openSet.IndexOf(openSetTile);
+                }
+
+                int newMovementCost = currentTile.gCost + GetDistance(currentTile.tile, neighbor);
+                if(inOpenSet > -1)
+                {
+                    if(newMovementCost < openSet[inOpenSet].gCost)
+                        openSet[inOpenSet] = new PathfindingTile(openSet[inOpenSet].tile, newMovementCost, GetDistance(neighbor, currentTile.tile), closedSet.IndexOf(currentTile));
+                }
+                else
+                {
+                    openSet.Add(new PathfindingTile(neighbor, newMovementCost, GetDistance(neighbor, currentTile.tile), closedSet.IndexOf(currentTile)));
+                }    
+            }
+
+        }    
+
+        return null;
+    }
+
+    private int GetDistance(Tile tileA, Tile tileB)
+    {
+        int distanceX = (int)Mathf.Abs(tileA.xCoordinate - tileB.xCoordinate);
+        int distanceY = (int)Mathf.Abs(tileA.yCoordinate - tileB.yCoordinate);
+
+        return distanceX > distanceY ? distanceX : distanceY;
+    }
+
+    private List<Tile> RetracePath(Tile startTile, PathfindingTile endTile, List<PathfindingTile> closedSet)
+    {
+        List<Tile> path = new List<Tile>();
+        PathfindingTile currentTile = endTile;
+        while (currentTile.tile != startTile)
+        {
+            path.Add(currentTile.tile);
+            currentTile = closedSet[currentTile.parentTileIndex];
+        }
+        path.Reverse();
+        return path;
     }
 
     /// <summary>

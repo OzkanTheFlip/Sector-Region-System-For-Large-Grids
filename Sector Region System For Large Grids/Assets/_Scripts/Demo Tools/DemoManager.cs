@@ -22,6 +22,11 @@ public class DemoManager : MonoBehaviour
     [SerializeField]
     private GameObject displayTile;
 
+    [SerializeField]
+    private int startTileX, startTileY;
+    [SerializeField]
+    private int endTileX, endTileY;
+
 
     private bool blinkRegionThresholds = false;
     private bool showRegionNeigbors = false;
@@ -40,6 +45,8 @@ public class DemoManager : MonoBehaviour
 
     private List<List<SpriteRenderer>> displayTileSpriteRenderers = new List<List<SpriteRenderer>>();
     private List<List<SpriteRenderer>> displayTileOverlapSpriteRenderers = new List<List<SpriteRenderer>>();
+
+    private List<Tile> pathTilesToDisplay = new List<Tile>();
 
     private float timer = 0f;
 
@@ -81,6 +88,7 @@ public class DemoManager : MonoBehaviour
         colors.Add(new Color(255f / 255f, 100f / 255f, 0f, .4f));
         colors.Add(new Color(100f / 255f, 50f / 255f, 0f, .4f));
         colors.Add(new Color(Color.yellow.r, Color.yellow.g, Color.yellow.b, .4f));
+
     }
 
     private void Update()
@@ -239,6 +247,20 @@ public class DemoManager : MonoBehaviour
         else
         {
             DisplayGrid();
+        }
+    }
+
+    public void FindPath()
+    {
+        System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+        stopwatch.Start();
+        pathTilesToDisplay = grid.FindPath(grid.GetTile(startTileX, startTileY), grid.GetTile(endTileX, endTileY));
+        stopwatch.Stop();
+        Debug.Log(stopwatch.ElapsedMilliseconds);
+
+        foreach (Tile tile in pathTilesToDisplay)
+        {
+            displayTileSpriteRenderers[tile.xCoordinate][tile.yCoordinate].color = Color.black;
         }
     }
 }
