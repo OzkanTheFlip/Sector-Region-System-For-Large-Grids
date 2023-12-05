@@ -89,4 +89,9 @@ public class Region
     {
         return thresholds.Contains(threshold);
     }
+
+    public void CullLastThreshold()
+    {
+        thresholds.RemoveAt(thresholds.Count - 1);
+    }
 }

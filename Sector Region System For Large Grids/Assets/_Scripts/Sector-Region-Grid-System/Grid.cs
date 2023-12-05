@@ -20,8 +20,6 @@ public class Grid
     //Each Sector is broken down into Regions
     private HashSet<Region> regions = new HashSet<Region>();
 
-    private HashSet<Threshold> thresholdMap = new HashSet<Threshold>();
-
     //Room id number, a room is a section of map floodfilled by region
     private int roomIndex = 0;
 
@@ -56,6 +54,9 @@ public class Grid
         {
             GenerateRegions(sector);
         }
+
+        //Connect the thresholds of the region
+        ConnectThresholds();
 
         //Set the rooms
         SetRooms();
@@ -279,7 +280,7 @@ public class Grid
                     isThreshold = true;
             }
 
-            //If there were any neighbors in a different region, create a threshold for the region
+            //If there were any neighbors in a different region, create a threshold with this tile
             if(isThreshold)
                 regionThresholds.Add(new Threshold(regionTile, region.room));
         }
@@ -294,6 +295,7 @@ public class Grid
                 if(neighbor != regionThreshold)
                 {
                     //Add it as a neighbor and grab distance to cache
+                    //This distance is inacurate since it doesn't use pathfinding, but that's okay
                     regionThreshold.AddIntraNeighbor(neighbor, GetDistance(regionThreshold.tile, neighbor.tile));
                 }
             }
@@ -329,10 +331,13 @@ public class Grid
 
     private Threshold GetThreshold(Tile tile)
     {
-        foreach(Threshold threshold in thresholdMap)
+        foreach (Region region in regions)
         {
-            if (threshold.tile == tile)
-                return threshold;
+            foreach (Threshold threshold in region.GetThresholds())
+            {
+                if (threshold.tile == tile)
+                    return threshold;
+            }
         }
 
         return null;
@@ -384,8 +389,140 @@ public class Grid
         }
     }
 
-    //A* Pathfinding
+    //HA* Pathfinding
     public List<Tile> FindPath(Tile startTile, Tile endTile)
+    {
+        Region startRegion = GetTileRegion(startTile);
+        Region endRegion = GetTileRegion(endTile);
+        Threshold temporaryStartThreshold = new Threshold(startTile, startRegion.room);
+        Threshold temporaryEndThreshold = new Threshold(endTile, endRegion.room);
+
+        foreach (Threshold threshold in startRegion.GetThresholds())
+        {
+            temporaryStartThreshold.AddIntraNeighbor(threshold, GetDistance(threshold.tile, startTile));
+        }
+        foreach (Threshold threshold in startRegion.GetThresholds())
+        {
+            threshold.AddIntraNeighbor(temporaryStartThreshold, GetDistance(threshold.tile, startTile));
+        }
+        startRegion.AddThreshold(temporaryStartThreshold);
+
+        foreach (Threshold threshold in endRegion.GetThresholds())
+        {
+            temporaryEndThreshold.AddIntraNeighbor(threshold, GetDistance(threshold.tile, endTile));
+        }
+        foreach (Threshold threshold in endRegion.GetThresholds())
+        {
+            threshold.AddIntraNeighbor(temporaryEndThreshold, GetDistance(threshold.tile, endTile));
+        }
+        endRegion.AddThreshold(temporaryEndThreshold);
+
+
+        //Thresholds to evaluate
+        List<PathfindingThreshold> openSet = new List<PathfindingThreshold>();
+        //Tiles already evaluated
+        List<PathfindingThreshold> closedSet = new List<PathfindingThreshold>();
+
+        //Start with the starting threshold
+        openSet.Add(new PathfindingThreshold(temporaryStartThreshold, 0, 0, -1));
+
+        //Go while there are thresholds to evaluate
+        while (openSet.Count > 0)
+        {
+            //Threshold we're evaluating
+            PathfindingThreshold currentThreshold = openSet[0];
+
+            //Loop through the tiles in the open set
+            for (int i = 1; i < openSet.Count; i++)
+            {
+                //Get the tile with the lowest fCost in currentThreshold. If there's a tie, take the tile with the lower hCost
+                if (openSet[i].fCost <= currentThreshold.fCost)
+                {
+                    if (openSet[i].hCost < currentThreshold.hCost)
+                        currentThreshold = openSet[i];
+                }
+            }
+
+            //Move the current threshold with the lowest fCost from the open set to the closed set
+            openSet.Remove(currentThreshold);
+            closedSet.Add(currentThreshold);
+
+            //If the current threshold is the end threshold, we're done pathfinding
+            if (currentThreshold.threshold == temporaryEndThreshold)
+            {
+                List<Threshold> path = RetraceThresholdPath(temporaryStartThreshold, currentThreshold, closedSet);
+
+                foreach (Threshold threshold in startRegion.GetThresholds())
+                {
+                    threshold.CullLastNeighbor();
+                }
+                foreach (Threshold threshold in endRegion.GetThresholds())
+                {
+                    threshold.CullLastNeighbor();
+                }
+                startRegion.CullLastThreshold();
+                endRegion.CullLastThreshold();
+
+                return BruteFindPath(startTile, path[0].tile);
+            }
+
+            //Loop through each neighbor and add it to the open set if it's valid for evaluation
+            foreach (NeighborThreshold neighbor in currentThreshold.threshold.GetNeighbors())
+            {
+                //Find out if the neighbor is valid for evaluation
+                bool validForEvaluation = true;
+
+                //If it's in the closed set
+                foreach (PathfindingThreshold closedSetThreshold in closedSet)
+                {
+                    if (closedSetThreshold.threshold == neighbor.threshold)
+                        validForEvaluation = false;
+                }
+
+                if (!validForEvaluation)
+                    continue;
+
+                //Find out if the neighbor is already in the open set
+                int inOpenSet = -1;
+
+                //If it's in the open set
+                foreach (PathfindingThreshold openSetThreshold in openSet)
+                {
+                    if (openSetThreshold.threshold == neighbor.threshold)
+                        inOpenSet = openSet.IndexOf(openSetThreshold);
+                }
+
+                int newMovementCost = currentThreshold.gCost + neighbor.distance;
+                if (inOpenSet > -1)
+                {
+                    if (newMovementCost < openSet[inOpenSet].gCost)
+                        openSet[inOpenSet] = new PathfindingThreshold(openSet[inOpenSet].threshold, newMovementCost, GetDistance(currentThreshold.threshold.tile, endTile), closedSet.IndexOf(currentThreshold));
+                }
+                else
+                {
+                    openSet.Add(new PathfindingThreshold(neighbor.threshold, newMovementCost, GetDistance(currentThreshold.threshold.tile, endTile), closedSet.IndexOf(currentThreshold)));
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private List<Threshold> RetraceThresholdPath(Threshold startThreshold, PathfindingThreshold endThreshold, List<PathfindingThreshold> closedSet)
+    {
+        List<Threshold> path = new List<Threshold>();
+        PathfindingThreshold currentThreshold = endThreshold;
+        while (currentThreshold.threshold != startThreshold)
+        {
+            path.Add(currentThreshold.threshold);
+            currentThreshold = closedSet[currentThreshold.parentThresholdIndex];
+        }
+        path.Reverse();
+        return path;
+    }
+
+    //A* Pathfinding
+    public List<Tile> BruteFindPath(Tile startTile, Tile endTile)
     {
         //Tiles to evaluate
         List<PathfindingTile> openSet = new List<PathfindingTile>();
